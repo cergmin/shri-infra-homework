@@ -31,8 +31,9 @@ jobs:
         with:
           host: ${{ secrets.PRODUCTION_SERVER_HOST }}
           username: ${{ secrets.PRODUCTION_SERVER_USERNAME }}
-          private_key: ${{ secrets.SSH_PRIVATE_KEY }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
-            docker stop shri-infra
-            docker rm shri-infra
+            docker pull cr.yandex/${{ secrets.YANDEX_CONTAINER_REGISTRY_ID }}/app:${{ github.event.inputs.release_version }}_latest
+            docker stop shri-infra || true
+            docker rm shri-infra || true
             docker run -d --name shri-infra -p 3000:3000 cr.yandex/${{ secrets.YANDEX_CONTAINER_REGISTRY_ID }}/app:${{ github.event.inputs.release_version }}_latest
