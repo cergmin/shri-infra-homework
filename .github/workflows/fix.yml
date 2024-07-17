@@ -109,13 +109,21 @@ jobs:
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
-            const { data: issues } = await github.issues.listForRepo({
+            const { Octokit } = require("@octokit/rest");
+            const octokit = new Octokit({ auth: process.env.GITHUB_TOKEN });
+
+            // Получение списка открытых issues
+            const { data: issues } = await octokit.issues.listForRepo({
               owner: context.repo.owner,
               repo: context.repo.repo,
               state: 'open',
             });
+
+            // Находим номер нужного issue по заголовку
             const issueNumber = issues.find(issue => issue.title.startsWith(`Release ${{ github.event.inputs.release_version }}`)).number;
-            await github.issues.createComment({
+
+            // Создаем комментарий
+            await octokit.issues.createComment({
               owner: context.repo.owner,
               repo: context.repo.repo,
               issue_number: issueNumber,
