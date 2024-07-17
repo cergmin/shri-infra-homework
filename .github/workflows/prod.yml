@@ -31,8 +31,8 @@ jobs:
         with:
           host: ${{ secrets.PRODUCTION_SERVER_HOST }}
           username: ${{ secrets.PRODUCTION_SERVER_USERNAME }}
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          private_key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
-            docker stop my-app-container
-            docker rm my-app-container
-            docker run -d --name my-app-container -p 80:80 cr.yandex/${{ secrets.YANDEX_CONTAINER_REGISTRY_ID }}/app:${{ github.event.inputs.release_version }}_latest
+            docker stop shri-infra
+            docker rm shri-infra
+            docker run -d --name shri-infra -p 3000:3000 cr.yandex/${{ secrets.YANDEX_CONTAINER_REGISTRY_ID }}/app:${{ github.event.inputs.release_version }}_latest
