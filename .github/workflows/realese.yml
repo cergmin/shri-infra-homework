@@ -8,7 +8,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        node-version: [18]  # Укажите нужную версию Node.js здесь
+        node-version: [14]  # Укажите нужную версию Node.js здесь
     steps:
     - name: Checkout repository
       uses: actions/checkout@v2
@@ -54,8 +54,8 @@ jobs:
       id: get-previous-tag
       run: echo "::set-output name=prev-tag::$(git describe --tags --abbrev=0 HEAD^)"
 
-    - name: Get list of commits
-      id: get-commits
+    - name: Get list of commits for GitHub Issue
+      id: get-commits-issue
       run: echo "::set-output name=commits::$(git log --pretty=format:"%h - %s" $(git describe --tags --abbrev=0 HEAD^)..HEAD)"
 
     - name: Create GitHub Issue
@@ -71,17 +71,17 @@ jobs:
         echo "**Author**: ${{ github.actor }}" >> ./release_issue_content.md
         echo "**Version**: ${{ github.run_number }}" >> ./release_issue_content.md
         echo "**Commits**:" >> ./release_issue_content.md
-        echo "${{ steps.get-commits.outputs.commits }}" >> ./release_issue_content.md
+        echo "${{ steps.get-commits-issue.outputs.commits }}" >> ./release_issue_content.md
         echo "**Docker image**: cr.yandex/${{ secrets.YANDEX_CONTAINER_REGISTRY_ID }}/app:${{ github.run_number }}" >> ./release_issue_content.md
 
-    - name: Get list of commits
-      id: get-commits
+    - name: Get list of commits for CHANGELOG
+      id: get-commits-changelog
       run: echo "::set-output name=commits::$(git log --pretty=format:"%h - %s" $(git describe --tags --abbrev=0 HEAD^)..HEAD)"
 
     - name: Update CHANGELOG.md
       run: |
         echo "## Release ${{ github.run_number }} - $(date +%Y-%m-%d)" > new_changelog.md
-        echo "${{ steps.get-commits.outputs.commits }}" >> new_changelog.md
+        echo "${{ steps.get-commits-changelog.outputs.commits }}" >> new_changelog.md
         cat CHANGELOG.md >> new_changelog.md
         mv new_changelog.md CHANGELOG.md
         git config user.name "${{ github.actor }}"
