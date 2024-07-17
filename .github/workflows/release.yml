@@ -1,0 +1,107 @@
+name: Release
+
+on:
+  workflow_dispatch:
+
+jobs:
+  lint:
+    name: Запуск линтеров
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - name: Настройка Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20.x'
+    - run: npm ci
+      name: Установка зависимостей
+    - run: npm run lint
+      name: Запуск линтеров
+
+  test:
+    name: Запуск тестов
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - name: Настройка Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20.x'
+    - run: npm ci
+      name: Установка зависимостей
+    - run: npm run build --if-present
+      name: Сборка проекта
+    - run: npm test
+      name: Запуск тестов
+
+  check-results:
+    name: Проверка результатов
+    needs: [lint, test]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Проверка результатов
+        run: exit 1
+        if: needs.lint.result != 'success' || needs.test.result != 'success'
+
+  release:
+    name: Выпуск релиза
+    needs: check-results
+    runs-on: ubuntu-latest
+    env:
+      YANDEX_OAUTH : ${{ secrets.YANDEX_OAUTH  }}
+      YANDEX_DOCKER_REGISTRY_ID: ${{ secrets.YANDEX_DOCKER_REGISTRY_ID }}
+    steps:
+    - uses: actions/checkout@v4
+      name: Переключение в ветку main
+      with:
+        ref: main
+    - name: Создание релизной ветки
+      run: git checkout -b releases/${{ github.run_number }}
+    - name: Логин в Docker реестр
+      run: |
+        docker login \
+          --username oauth \
+          --password $YANDEX_OAUTH \
+          cr.yandex
+    - name: Сборка Docker-образа
+      run: npm run build:docker
+    - name: Тегирование Docker-образа
+      run: |
+        docker tag shri-infra cr.yandex/${{ env.YANDEX_DOCKER_REGISTRY_ID }}/app:${{ github.run_number }}
+        docker tag shri-infra cr.yandex/${{ env.YANDEX_DOCKER_REGISTRY_ID }}/app:${{ github.run_number }}_latest
+    - name: Отправка Docker-образа в реестр
+      run: |
+        docker push cr.yandex/${{ env.YANDEX_DOCKER_REGISTRY_ID }}/app:${{ github.run_number }}
+        docker push cr.yandex/${{ env.YANDEX_DOCKER_REGISTRY_ID }}/app:${{ github.run_number }}_latest
+    - name: Настройка Git для пуша
+      run: |
+        git config --global user.email "actions@github.com"
+        git config --global user.name "GitHub Actions"
+    - name: Тег в ENV
+      run: echo "ENV_TAG=v${{ github.run_number }}" >> $GITHUB_ENV
+    - name: Создание тега с номером текущей версии
+      run: |
+        git tag $ENV_TAG
+        git push origin $ENV_TAG
+    - name: Создание метки времени
+      run: echo "BUILD_TIME=$(TZ=Europe/Moscow date)" >> $GITHUB_ENV
+    - name: Создание задачи релиза
+      uses: actions-ecosystem/action-create-issue@v1
+      env:
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        github_token: ${{ secrets.github_token }}
+        title: Релиз ${{ github.run_number }}
+        body: |
+          **Информация о релизе**
+          - Дата: ${{ env.BUILD_TIME }}
+          - Автор: ${{ github.actor }}
+          - Версия: ${{ env.ENV_TAG }}
+          - Docker-образ: cr.yandex/${{ env.YANDEX_DOCKER_REGISTRY_ID }}/app:${{ github.run_number }}
+    - name: Обновление CHANGELOG.md
+      run: |
+        echo "## Релиз ${{ env.ENV_TAG }}" >> CHANGELOG.md
+        echo "Коммит: $(git rev-list -n 1 ${{ env.ENV_TAG }})" >> CHANGELOG.md
+        git add CHANGELOG.md
+        git commit -m "Обновление CHANGELOG.md для релиза ${{ env.ENV_TAG }}"
+        git push origin main
