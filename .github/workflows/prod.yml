@@ -29,7 +29,7 @@ jobs:
           docker pull cr.yandex/${{ env.YANDEX_DOCKER_REGISTRY_ID }}/app:${{ github.event.inputs.release_version }}_latest
           docker stop app || true
           docker rm app || true
-          docker run -d --name app cr.yandex/${{ env.YANDEX_DOCKER_REGISTRY_ID }}/app:${{ github.event.inputs.release_version }}_latest
+          docker run -p 3000:3000 cr.yandex/${{ env.YANDEX_DOCKER_REGISTRY_ID }}/app:${{ github.event.inputs.release_version }}_latest
 
     - name: Создание метки времени
       run: echo "BUILD_TIME=$(TZ=Europe/Moscow date)" >> $GITHUB_ENV
