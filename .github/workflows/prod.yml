@@ -17,13 +17,6 @@ jobs:
       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
     steps:
-    - name: Логин в Docker реестр
-      run: |
-        docker login \
-          --username oauth \
-          --password $YANDEX_OAUTH \
-          cr.yandex
-
     - name: Подключение по SSH и выполнение команд
       uses: appleboy/ssh-action@v1.0.3
       with:
