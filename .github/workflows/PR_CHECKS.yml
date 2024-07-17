@@ -17,17 +17,13 @@ jobs:
     - name: Set up Node.js
       uses: actions/setup-node@v3
       with:
-        node-version: '18'
+        node-version: '20'
 
     - name: Install dependencies
       run: npm install
 
     - name: Run lint
-      run: npm run lint | tee lint.log
-
-    - name: Cleanup lint logs
-      if: success()
-      run: rm lint.log
+      run: npm run lint
 
   test:
     runs-on: ubuntu-latest
@@ -39,14 +35,10 @@ jobs:
     - name: Set up Node.js
       uses: actions/setup-node@v3
       with:
-        node-version: '18'
+        node-version: '20'
 
     - name: Install dependencies
       run: npm install
 
     - name: Run tests
-      run: npm test | tee test.log
-
-    - name: Cleanup test logs
-      if: success()
-      run: rm test.log
+      run: npm test

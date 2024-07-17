@@ -1,0 +1,120 @@
+name: RELEASE
+
+on:
+  workflow_dispatch:
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Run lint
+        run: npm run lint
+
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Run tests
+        run: npm test
+
+  release:
+    needs: [lint, test]
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Output Run Number
+        run: echo ${{ github.run_number }}
+
+      - name: Create release branch
+        run: |
+          git checkout -b releases/${{ github.run_number }}
+          git push origin releases/${{ github.run_number }}
+
+      - name: Create Docker image
+        run: |
+          docker build -t cr.yandex/${{ secrets.REGISTRY_ID }}/app:${{ github.run_number }} .
+          docker tag cr.yandex/${{ secrets.REGISTRY_ID }}/app:${{ github.run_number }} cr.yandex/${{ secrets.REGISTRY_ID }}/app:${{ github.run_number }}_latest
+
+      - name: Push Docker image
+        run: |
+          docker push cr.yandex/${{ secrets.REGISTRY_ID }}/app:${{ github.run_number }}
+          docker push cr.yandex/${{ secrets.REGISTRY_ID }}/app:${{ github.run_number }}_latest
+
+      - name: Create release tag
+        run: |
+          git checkout main
+          LAST_COMMIT=$(git rev-parse HEAD)  # Получаем хеш последнего коммита на главной ветке
+          git tag -a v${{ github.run_number }} $LAST_COMMIT -m "Release ${{ github.run_number }}"  # Создаём тег с номером текущего run_number и указываем хеш коммита
+          git push origin v${{ github.run_number }}
+
+      - name: Generate release notes
+        id: release_notes
+        run: |
+          git fetch --tags # обновляем локальный репозиторий
+          PREV_TAG=$(git describe --tags --abbrev=0 HEAD^) # получаем предыдущий тег
+          COMMITS=$(git log ${PREV_TAG}..HEAD --oneline) # коммиты между предыдущим тегом и текущим состоянием main
+          echo "::set-output name=commits::${COMMITS}" # запоминаем список коммитов в переменную
+
+      - name: Create GitHub Issue
+        uses: actions/github-script@v6
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            github.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: `Release ${{ github.run_number }}`,
+              body: `
+              **Date:** ${new Date().toISOString().split('T')[0]}
+              **Author:** ${context.actor}
+              **Version:** ${{ github.run_number }}
+              **Commits:** ${{ steps.release_notes.outputs.commits }}
+              **Docker Image:** cr.yandex/${{ secrets.REGISTRY_ID }}/app:${{ github.run_number }}
+              `
+            })
+
+      - name: Update CHANGELOG.md
+        run: |
+          echo "## ${{ github.run_number }} - $(date +'%Y-%m-%d')" > temp.md # во временный файл пишем новую версию
+          echo "${{ steps.release_notes.outputs.commits }}" >> temp.md # список коммитов
+          cat CHANGELOG.md >> temp.md # копируем весь прошлый контент ченнджлога в темп
+          mv temp.md CHANGELOG.md
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add CHANGELOG.md
+          git commit -m "Update CHANGELOG.md for release ${{ github.run_number }}"
+          git push origin main
