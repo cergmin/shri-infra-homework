@@ -31,7 +31,7 @@ jobs:
         with:
           host: ${{ secrets.PRODUCTION_SERVER_HOST }}
           username: ${{ secrets.PRODUCTION_SERVER_USERNAME }}
-          password: ${{ secrets.SSH_PRIVATE_KEY }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
             ssh ${{ secrets.PRODUCTION_SERVER_USERNAME }}@${{ secrets.PRODUCTION_SERVER_HOST }} <<EOF
             curl -H "Metadata-Flavor:Google" 169.254.169.254/computeMetadata/v1/instance/service-accounts/default/token | \
