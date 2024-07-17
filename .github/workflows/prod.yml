@@ -25,14 +25,11 @@ jobs:
         key: ${{ secrets.SSH_KEY }}
         passphrase: ${{ secrets.SSH_PASSPHRASE }}
         script: |
-          docker login \
-            --username oauth \
-            --password $YANDEX_OAUTH \
-            cr.yandex
-          docker pull cr.yandex/$YANDEX_DOCKER_REGISTRY_ID/app:${{ github.event.inputs.release_version }}_latest
+          docker login --username oauth --password $YANDEX_OAUTH cr.yandex
+          docker pull cr.yandex/${{ env.YANDEX_DOCKER_REGISTRY_ID }}/app:${{ github.event.inputs.release_version }}_latest
           docker stop app || true
           docker rm app || true
-          docker run -d --name app cr.yandex/$YANDEX_DOCKER_REGISTRY_ID/app:${{ github.event.inputs.release_version }}_latest
+          docker run -d --name app cr.yandex/${{ env.YANDEX_DOCKER_REGISTRY_ID }}/app:${{ github.event.inputs.release_version }}_latest
 
     - name: Создание метки времени
       run: echo "BUILD_TIME=$(TZ=Europe/Moscow date)" >> $GITHUB_ENV
