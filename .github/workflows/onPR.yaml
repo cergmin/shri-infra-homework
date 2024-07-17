@@ -1,6 +1,5 @@
 on:
-  pull_request:
-    types: [opened, edited, reopened]
+  pull_request
 
 jobs:
   test_n_lint:
