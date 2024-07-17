@@ -145,4 +145,3 @@ npm start
 ```
 
 После этого можете открыть приложение в браузере по адресу http://localhost:3000/hw/store
-test branch protect rule
