@@ -1,0 +1,20 @@
+name: Deploy
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to deploy'
+        required: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Deploy to VM
+        run: |
+          ssh -o StrictHostKeyChecking=no -i ${{ secrets.SSH_PRIVATE_KEY }} user@${{ secrets.VM_IP }} << 'EOF'
+            docker pull cr.yandex/${{ secrets.REGISTRY_ID }}/app:${{ github.event.inputs.version }}_latest
+            docker run -d -p 3000:3000 cr.yandex/${{ secrets.REGISTRY_ID }}/app:${{ github.event.inputs.version }}_latest
+EOF

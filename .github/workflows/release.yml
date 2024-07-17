@@ -1,0 +1,53 @@
+name: Release
+
+on:
+  workflow_dispatch:
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v2
+        with:
+          node-version: '18'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint code
+        run: npm run lint
+
+      - name: Run tests
+        run: npm run test
+
+      - name: Build Docker image
+        run: npm run build:docker
+
+      - name: Tag Docker image
+        run: |
+          IMAGE_TAG="cr.yandex/${{ secrets.REGISTRY_ID }}/app:${{ github.run_number }}"
+          docker tag shri-infra $IMAGE_TAG
+          docker tag shri-infra $IMAGE_TAG_latest
+          echo $IMAGE_TAG >> $GITHUB_ENV
+
+      - name: Push Docker image
+        run: |
+          echo "${{ secrets.YC_DOCKER_PASSWORD }}" | docker login --username "oauth" --password-stdin cr.yandex
+          docker push ${{ env.IMAGE_TAG }}
+          docker push ${{ env.IMAGE_TAG }}_latest
+
+      - name: Create release branch
+        run: git checkout -b releases/${{ github.run_number }} && git push origin releases/${{ github.run_number }}
+
+      - name: Create tag
+        run: git tag ${{ github.run_number }} && git push origin ${{ github.run_number }}
+
+      - name: Create release issue
+        uses: peter-evans/create-issue-from-file@v3
+        with:
+          title: Release ${{ github.run_number }}
+          content-filepath: release_notes.md
