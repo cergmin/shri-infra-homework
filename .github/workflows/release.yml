@@ -104,4 +104,4 @@ jobs:
         echo "Коммит: $(git rev-list -n 1 ${{ env.ENV_TAG }})" >> CHANGELOG.md
         git add CHANGELOG.md
         git commit -m "Обновление CHANGELOG.md для релиза ${{ env.ENV_TAG }}"
-        git push origin main
+        git push origin releases/${{ github.run_number }}
