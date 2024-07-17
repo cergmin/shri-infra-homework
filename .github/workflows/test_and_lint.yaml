@@ -12,7 +12,7 @@ jobs:
   lint:
     runs-on: ubuntu-latest
     steps:
-      name: Checkout
+      - name: Checkout
         uses: actions/checkout@v4
 
       - uses: pnpm/action-setup@v4
@@ -31,13 +31,13 @@ jobs:
       - name: Install dependencies
         run: pnpm install
 
-      -name: Run LINT
+      - name: Run LINT
         run: pnpm run linu
 
   test:
     runs-on: ubuntu-latest
     steps:
-      name: Checkout
+      - name: Checkout
         uses: actions/checkout@v4
 
       - uses: pnpm/action-setup@v4
@@ -56,6 +56,5 @@ jobs:
       - name: Install dependencies
         run: pnpm install
 
-      -name: Run
+      - name: Run
         run: pnpm run test
-
