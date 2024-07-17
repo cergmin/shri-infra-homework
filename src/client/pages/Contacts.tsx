@@ -13,11 +13,6 @@ export const Contacts: React.FC = () => {
           <h1>Contacts</h1>
 
           <p>
-            Have a question about our scratchers or need help placing an order?
-            Don't hesitate to reach out to us! Our dedicated team is here to
-            provide you with top-notch service and support.
-          </p>
-          <p>
             Our friendly representatives are available during business hours to
             assist you with any inquiries you may have.
           </p>
