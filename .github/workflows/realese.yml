@@ -53,8 +53,10 @@ jobs:
       uses: docker/setup-buildx-action@v3
 
     - name: Login to Yandex Container Registry
+      env:
+      YANDEX_CLOUD_SA_KEY: ${{ secrets.YANDEX_CLOUD_SA_KEY }}
       run: |
-        echo "${{ secrets.YANDEX_CLOUD_SA_KEY }}" | docker login -u json_key --password-stdin cr.yandex
+        docker login -u _json_key --password-stdin https://cr.yandex
 
     - name: Build and push Docker image
       run: |
