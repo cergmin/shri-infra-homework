@@ -50,7 +50,7 @@ jobs:
       uses: actions/checkout@v4
 
     - name: Set up Docker Buildx
-      uses: docker/setup-buildx-action@v2
+      uses: docker/setup-buildx-action@v3
 
     - name: Login to Yandex Container Registry
       run: |
@@ -91,7 +91,7 @@ jobs:
       run: echo "::set-output name=commits::$(git log --pretty=format:"%h - %s" $(git describe --tags --abbrev=0 HEAD^)..HEAD)"
 
     - name: Create GitHub Issue
-      uses: peter-evans/create-issue-from-file@v2
+      uses: peter-evans/create-issue-from-file@v5
       with:
         title: Release ${{ github.run_number }}
         content-file: ./release_issue_content.md
