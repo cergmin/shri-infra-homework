@@ -1,0 +1,76 @@
+name: Release
+
+on:
+  workflow_dispatch:
+
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        task: [ lint, test ]
+        node-version: [ 20.x ]
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Staring Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v3
+        with:
+          node-version: ${{ matrix.node-version }}
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Linting
+        if: matrix.task == 'lint'
+        run: npm run lint
+
+      - name: Testing
+        if: matrix.task == 'test'
+        run: npm run test
+
+  release:
+    needs: [ checks ]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Get release version
+        id: get_version
+        run: echo "RELEASE_VERSION=${{ github.run_number }}" >> $GITHUB_ENV
+
+      - name: Create release branch
+        run: |
+          git checkout -b releases/${{ env.RELEASE_VERSION }}
+          git push origin releases/${{ env.RELEASE_VERSION }}
+
+      - name: Build Docker image
+        run: docker build --platform=linux/amd64 -t cr.yandex/${{ secrets.CR_ID }}/app:${{ env.RELEASE_VERSION }} .
+
+      - name: Tag Docker image with latest
+        run: docker tag cr.yandex/${{ secrets.CR_ID }}/app:${{ env.RELEASE_VERSION }} cr.yandex/${{ secrets.CR_ID }}/app:${{ env.RELEASE_VERSION }}_latest
+
+      - name: Push Docker image
+        run: |
+          docker push cr.yandex/${{ secrets.CR_ID }}/app:${{ env.RELEASE_VERSION }}
+          docker push cr.yandex/${{ secrets.CR_ID }}/app:${{ env.RELEASE_VERSION }}_latest
+
+      - name: Create GitHub release tag
+        run: |
+          git tag -a v${{ env.RELEASE_VERSION }} -m "release ${{ env.RELEASE_VERSION }}"
+          git push origin v${{ env.RELEASE_VERSION }}
+
+      - name: Get previous release tag
+        id: get_prev_tag
+        run: echo "PREV_TAG=$(git describe --tags --abbrev=0 HEAD^)" >> $GITHUB_ENV
+
+      - name: Get commit list
+        id: get_commit_list
+        run: |
+          PREV_TAG=${{ steps.get_prev_tag.outputs.PREV_TAG }}
+          COMMITS=$(git log $PREV_TAG..HEAD --oneline)
+          echo "COMMITS=$COMMITS" >> $GITHUB_ENV
+
+      - name: Create release issue
+        run: |
+          gh issue create --title "Release ${{ env.RELEASE_VERSION }}" --body "Date: ${{ github.event.created_at }}\nAuthor: ${{ github.actor }}\nVersion: ${{ env.RELEASE_VERSION }}\nCommits: ${{ env.COMMITS }}\nDocker Image: cr.yandex/${{ secrets.CR_ID }}/app:${{ env.RELEASE_VERSION }}"
