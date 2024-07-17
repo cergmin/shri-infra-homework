@@ -41,5 +41,5 @@ jobs:
             docker login --username iam --password-stdin cr.yandex; \
             docker pull cr.yandex/${{ secrets.YANDEX_CONTAINER_REGISTRY_ID }}/app:${{ github.event.inputs.release_version }}_latest; \
             docker run -d --name shri-infra -p 3000:3000 cr.yandex/${{ secrets.YANDEX_CONTAINER_REGISTRY_ID }}/app:${{ github.event.inputs.release_version }}_latest
-          EOF
+            EOF
 
