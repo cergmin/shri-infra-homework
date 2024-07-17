@@ -1,0 +1,10 @@
+on:
+  pull_request:
+    types: [opened, edited, reopened]
+
+jobs:
+  test_n_lint:
+    uses: ./.github/workflows/test_and_lint.yaml
+
+  
+
