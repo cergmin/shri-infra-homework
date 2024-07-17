@@ -1,5 +1,4 @@
-on:
-  pull_request:
+on: workflow_dispatch
 
 jobs:
   lint:
@@ -17,3 +16,11 @@ jobs:
       - uses: actions/setup-node@v3
       - run: npm ci
       - run: npm run test
+
+  create_release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Create release branch
+        run: git checkout -b release/${{ github.run_number }}
+      - name: Push new branch
+        run: git push origin release/${{ github.run_number }}
