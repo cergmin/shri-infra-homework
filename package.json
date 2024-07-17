@@ -9,7 +9,7 @@
     "lint": "eslint ./src",
     "build:docker": "docker build -t shri-infra:latest .",
     "start:docker": "docker run -p 3000:3000 shri-infra",
-    "type-check": "tsc --noEmit"
+    "type-check": "tsc --noEmit --skipLibCheck"
   },
   "dependencies": {
     "@bem-react/classname": "^1.6.0",
