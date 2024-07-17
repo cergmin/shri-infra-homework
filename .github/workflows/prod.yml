@@ -1,0 +1,62 @@
+name: Prod
+
+on:
+  workflow_dispatch:
+    inputs:
+      release_version:
+        description: 'Версия релиза'
+        required: true
+
+jobs:
+  release:
+    name: Выпуск релиза
+    runs-on: ubuntu-latest
+    env:
+      YANDEX_OAUTH : ${{ secrets.YANDEX_OAUTH  }}
+      YANDEX_DOCKER_REGISTRY_ID: ${{ secrets.YANDEX_DOCKER_REGISTRY_ID }}
+      SSH_HOST: ${{ secrets.SSH_HOST }}
+      SSH_USER: ${{ secrets.SSH_USER }}
+      SSH_KEY: ${{ secrets.SSH_KEY }}
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+    steps:
+    - name: Логин в Docker реестр
+      run: |
+        docker login \
+          --username oauth \
+          --password $YANDEX_OAUTH \
+          cr.yandex
+
+    - name: Проверка существования Docker-образа
+      run: |
+        if ! docker pull cr.yandex/$YANDEX_DOCKER_REGISTRY_ID/app:${{ github.event.inputs.release_version }}_latest; then
+          echo "Образ не найден"
+          exit 1
+        fi
+
+    - name: Подключение по SSH и запуск Docker-образа
+      uses: appleboy/ssh-action@master
+      with:
+        host: ${{ env.SSH_HOST }}
+        username: ${{ env.SSH_USER }}
+        key: ${{ env.SSH_KEY }}
+        script: |
+          docker pull cr.yandex/$YANDEX_DOCKER_REGISTRY_ID/app:${{ github.event.inputs.release_version }}_latest
+          docker stop app || true
+          docker rm app || true
+          docker run -d --name app cr.yandex/$YANDEX_DOCKER_REGISTRY_ID/app:${{ github.event.inputs.release_version }}_latest
+    
+    - name: Создание метки времени
+      run: echo "BUILD_TIME=$(TZ=Europe/Moscow date)" >> $GITHUB_ENV
+
+    - name: Вычисление номера Issue
+      run: echo "ISSUE_NUMBER=$(expr ${{ github.event.inputs.release_version }} + 1)" >> $GITHUB_ENV
+
+    - name: Добавление комментария в Issue
+      uses: peter-evans/create-or-update-comment@v4
+      with:
+        issue-number: ${{ env.ISSUE_NUMBER }}
+        body: |
+          Релиз ${{ github.event.inputs.release_version }} выкачен в прод.
+          **Дата:** ${{ env.BUILD_TIME }}
+          **Кто запустил:** ${{ github.actor }}
