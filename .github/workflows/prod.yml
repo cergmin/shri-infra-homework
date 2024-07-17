@@ -1,0 +1,46 @@
+name: Deploy Release to Production
+
+on:
+  workflow_dispatch:
+    inputs:
+      release_version:
+        description: 'Release version to deploy'
+        required: true
+
+jobs:
+  deploy-release-to-prod:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check if Docker image exists in Container Registry
+        run: |
+          if docker pull cr.yandex/${{ secrets.YANDEX_CONTAINER_REGISTRY_ID }}/app:${{ github.event.inputs.release_version }}_latest; then
+            echo "Docker image cr.yandex/${{ secrets.YANDEX_CONTAINER_REGISTRY_ID }}/app:${{ github.event.inputs.release_version }}_latest found."
+          else
+            echo "Error: Docker image cr.yandex/${{ secrets.YANDEX_CONTAINER_REGISTRY_ID }}/app:${{ github.event.inputs.release_version }}_latest not found."
+            exit 1
+          fi
+
+      - name: Deploy Docker image to production
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.PRODUCTION_SERVER_HOST }}
+          username: ${{ secrets.PRODUCTION_SERVER_USERNAME }}
+          password: ${{ secrets.PRODUCTION_SERVER_PASSWORD }}
+          script: |
+            docker stop my-app-container
+            docker rm my-app-container
+            docker run -d --name my-app-container -p 80:80 cr.yandex/${{ secrets.YANDEX_CONTAINER_REGISTRY_ID }}/app:${{ github.event.inputs.release_version }}_latest
+
+      - name: Add comment to GitHub Issue
+        uses: actions/github-script@0.9.0
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            await github.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: ${{ github.event.number }},
+              body: `### Release Deployment to Production
+- **Date**: $(date +%Y-%m-%d)
+- **Deployed by**: ${{ github.actor }}
+- **Release Version**: ${{ github.event.inputs.release_version }}`})
