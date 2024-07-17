@@ -114,7 +114,7 @@ jobs:
               repo: context.repo.repo,
               state: 'open',
             });
-            const issueNumber = issues.find(issue => issue.title.startsWith(`Release ${github.event.inputs.release_version}`)).number;
+            const issueNumber = issues.find(issue => issue.title.startsWith(`Release ${{ github.event.inputs.release_version }}`)).number;
             await github.issues.createComment({
               owner: context.repo.owner,
               repo: context.repo.repo,
@@ -125,3 +125,4 @@ jobs:
               - **Commits**:
               ${process.env.COMMITS}
               - **Docker image**: cr.yandex/${{ secrets.YANDEX_CONTAINER_REGISTRY_ID }}/app:${{ github.event.inputs.release_version }}_fix${{ github.run_number }}`
+            });
