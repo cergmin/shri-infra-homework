@@ -109,17 +109,15 @@ jobs:
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
-            const { Octokit } = require("octokit");
-            const octokit = new Octokit({ auth: process.env.GITHUB_TOKEN });
-
-            // Получение списка открытых issues
-            const issues = await octokit.request('GET /repos/{owner}/{repo}/issues', {
+            const releaseVersion = "${{ github.event.inputs.release_version }}";
+            const issues = await github.rest.issues.listForRepo({
               owner: 'StepanTokt',
               repo: 'shri-infra-homework',
+              state: 'open',
               headers: {
                 'X-GitHub-Api-Version': '2022-11-28'
               }
-            })
+            });
 
             // Находим номер нужного issue по заголовку
             const issue = issues.data.find(issue => issue.title.startsWith(`Release ${releaseVersion}`));
@@ -131,26 +129,9 @@ jobs:
             }
 
             // Создаем комментарий
-            await octokit.request('POST /repos/{owner}/{repo}/issues/{issue_number}/comments', {
+            await github.rest.issues.createComment({
               owner: 'StepanTokt',
               repo: 'shri-infra-homework',
-              issue_number: issueNumber,
-              body: `### Release Fix Information
-              - **Date**: ${process.env.CURRENT_DATE}
-              - **Author**: ${github.actor}
-              - **Commits**:
-              ${process.env.COMMITS}
-              - **Docker image**: cr.yandex/${{ secrets.YANDEX_CONTAINER_REGISTRY_ID }}/app:${{ github.event.inputs.release_version }}_fix${{ github.run_number }}`,
-              headers: {
-                'X-GitHub-Api-Version': '2022-11-28'
-              }
-            })
-
-
-
-            await octokit.issues.createComment({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
               issue_number: issueNumber,
               body: `### Release Fix Information
               - **Date**: ${process.env.CURRENT_DATE}
