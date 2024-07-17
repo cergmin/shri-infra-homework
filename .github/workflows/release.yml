@@ -91,7 +91,7 @@ jobs:
         github_token: ${{ secrets.GITHUB_TOKEN }}
       with:
         github_token: ${{ secrets.github_token }}
-        title: v${{ github.run_number }}
+        title: Релиз ${{ github.run_number }}
         body: |
           **Информация о релизе**
           - Дата: ${{ env.BUILD_TIME }}
@@ -100,7 +100,7 @@ jobs:
           - Docker-образ: cr.yandex/${{ env.YANDEX_DOCKER_REGISTRY_ID }}/app:${{ github.run_number }}
     - name: Обновление CHANGELOG.md
       run: |
-        echo "## Релиз v${{ env.ENV_TAG }}" >> CHANGELOG.md
+        echo "## Релиз ${{ env.ENV_TAG }}" >> CHANGELOG.md
         echo "Коммит: $(git rev-list -n 1 ${{ env.ENV_TAG }})" >> CHANGELOG.md
         git add CHANGELOG.md
         git commit -m "Обновление CHANGELOG.md для релиза ${{ env.ENV_TAG }}"
