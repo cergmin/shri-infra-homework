@@ -27,25 +27,22 @@ jobs:
           --password $YANDEX_OAUTH \
           cr.yandex
 
-    - name: Проверка существования Docker-образа
-      run: |
-        if ! docker pull cr.yandex/$YANDEX_DOCKER_REGISTRY_ID/app:${{ github.event.inputs.release_version }}_latest; then
-          echo "Образ не найден"
-          exit 1
-        fi
-
-    - name: Подключение по SSH и запуск Docker-образа
-      uses: appleboy/ssh-action@master
+    - name: Подключение по SSH и выполнение команд
+      uses: appleboy/ssh-action@v1.0.3
       with:
         host: ${{ env.SSH_HOST }}
         username: ${{ env.SSH_USER }}
         key: ${{ env.SSH_KEY }}
         script: |
+          docker login \
+            --username oauth \
+            --password $YANDEX_OAUTH \
+            cr.yandex
           docker pull cr.yandex/$YANDEX_DOCKER_REGISTRY_ID/app:${{ github.event.inputs.release_version }}_latest
           docker stop app || true
           docker rm app || true
           docker run -d --name app cr.yandex/$YANDEX_DOCKER_REGISTRY_ID/app:${{ github.event.inputs.release_version }}_latest
-    
+
     - name: Создание метки времени
       run: echo "BUILD_TIME=$(TZ=Europe/Moscow date)" >> $GITHUB_ENV
 
