@@ -34,11 +34,6 @@ jobs:
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           port: 3000
           script: |
-            ssh -vvv ${{ secrets.PRODUCTION_SERVER_USERNAME }}@${{ secrets.PRODUCTION_SERVER_HOST }} <<EOF
-            curl -H "Metadata-Flavor:Google" 169.254.169.254/computeMetadata/v1/instance/service-accounts/default/token | \
-            cut -f1 -d',' | \
-            cut -f2 -d':' | \
-            tr -d '"' | \
             docker login --username StepanTokt --password ${{ secrets.GITHUB_TOKEN }} \
             docker pull cr.yandex/${{ secrets.YANDEX_CONTAINER_REGISTRY_ID }}/app:${{ github.event.inputs.release_version }}_latest; \
             docker stop shri-infra || true; \
