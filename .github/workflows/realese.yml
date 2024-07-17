@@ -4,33 +4,25 @@ on:
   workflow_dispatch:
 
 jobs:
-   build-and-deploy:
+  build-and-deploy:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        node-version: [18]  
+        node-version: [18]  # Укажите нужную версию Node.js здесь
     steps:
     - name: Checkout repository
       uses: actions/checkout@v2
+
+    - name: Use Node.js ${{ matrix.node-version }}
+      uses: actions/setup-node@v2
+      with:
+        node-version: ${{ matrix.node-version }}
 
     - name: Run linter
       run: npm run lint
 
-  run-tests:
-    runs-on: ubuntu-latest
-    steps:
-    - name: Checkout repository
-      uses: actions/checkout@v2
-
     - name: Run tests
       run: npm test
-
-  create-release-branch:
-    needs: [run-linter, run-tests]
-    runs-on: ubuntu-latest
-    steps:
-    - name: Checkout repository
-      uses: actions/checkout@v2
 
     - name: Create release branch
       run: |
@@ -38,13 +30,6 @@ jobs:
         git config user.email "${{ github.actor }}@users.noreply.github.com"
         git checkout -b releases/${{ github.run_number }}
         git push origin releases/${{ github.run_number }}
-
-  build-and-push-docker-image:
-    needs: [create-release-branch]
-    runs-on: ubuntu-latest
-    steps:
-    - name: Checkout repository
-      uses: actions/checkout@v2
 
     - name: Set up Docker Buildx
       uses: docker/setup-buildx-action@v2
@@ -60,24 +45,10 @@ jobs:
         docker push cr.yandex/${{ secrets.YANDEX_CONTAINER_REGISTRY_ID }}/app:${{ github.run_number }}
         docker push cr.yandex/${{ secrets.YANDEX_CONTAINER_REGISTRY_ID }}/app:${{ github.run_number }}_latest
 
-  create-github-tag:
-    needs: [build-and-push-docker-image]
-    runs-on: ubuntu-latest
-    steps:
-    - name: Checkout repository
-      uses: actions/checkout@v2
-
     - name: Create GitHub tag
       run: |
         git tag v${{ github.run_number }}
         git push origin v${{ github.run_number }}
-
-  create-github-issue:
-    needs: [create-github-tag]
-    runs-on: ubuntu-latest
-    steps:
-    - name: Checkout repository
-      uses: actions/checkout@v2
 
     - name: Get previous release tag
       id: get-previous-tag
@@ -102,13 +73,6 @@ jobs:
         echo "**Commits**:" >> ./release_issue_content.md
         echo "${{ steps.get-commits.outputs.commits }}" >> ./release_issue_content.md
         echo "**Docker image**: cr.yandex/${{ secrets.YANDEX_CONTAINER_REGISTRY_ID }}/app:${{ github.run_number }}" >> ./release_issue_content.md
-
-  update-changelog:
-    needs: [create-github-issue]
-    runs-on: ubuntu-latest
-    steps:
-    - name: Checkout repository
-      uses: actions/checkout@v2
 
     - name: Get list of commits
       id: get-commits
