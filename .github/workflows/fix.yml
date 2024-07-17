@@ -109,7 +109,7 @@ jobs:
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
-            import { Octokit } from "octokit";
+            const { Octokit } = require("octokit");
             const octokit = new Octokit({ auth: process.env.GITHUB_TOKEN });
 
             // Получение списка открытых issues
