@@ -6,7 +6,9 @@
     "build": "webpack --mode=production --node-env=production",
     "watch": "webpack --watch",
     "test": "jest",
-    "lint": "eslint ./src"
+    "lint": "eslint ./src",
+    "build:docker": "docker build -t shir-infra .",
+    "start:docker": "docker compose up --build"
   },
   "dependencies": {
     "@bem-react/classname": "^1.6.0",

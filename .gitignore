@@ -2,3 +2,8 @@ output.html
 node_modules
 .DS_Store
 dist
+/.idea/shri-infra-homework.iml
+/.idea/vcs.xml
+/.idea/inspectionProfiles/Project_Default.xml
+/.idea/modules.xml
+/.idea/dbnavigator.xml
