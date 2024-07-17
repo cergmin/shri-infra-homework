@@ -25,7 +25,7 @@ jobs:
         with:
           host: ${{ secrets.PRODUCTION_SERVER_HOST }}
           username: ${{ secrets.PRODUCTION_SERVER_USERNAME }}
-          password: ${{ secrets.PRODUCTION_SERVER_PASSWORD }}
+          ssh-key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
             docker stop my-app-container
             docker rm my-app-container
