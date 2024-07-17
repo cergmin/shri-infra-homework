@@ -11,6 +11,12 @@ jobs:
   deploy-release-to-prod:
     runs-on: ubuntu-latest
     steps:
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to Yandex Container Registry
+        run: echo ${{ secrets.YANDEX_OAUTH_TOKEN }} | docker login --username oauth --password-stdin cr.yandex
+
       - name: Check if Docker image exists in Container Registry
         run: |
           if docker pull cr.yandex/${{ secrets.YANDEX_CONTAINER_REGISTRY_ID }}/app:${{ github.event.inputs.release_version }}_latest; then
