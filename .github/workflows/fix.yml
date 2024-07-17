@@ -47,7 +47,7 @@ jobs:
           git push origin releases/${{ github.event.inputs.release_version }}_fix${{ github.run_number }}
 
   build-and-push-docker-image:
-    needs: [create-release-branch]
+    needs: [create-release-fix-branch]
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -61,13 +61,13 @@ jobs:
 
       - name: Build and push Docker image
         run: |
-          docker build -t cr.yandex/${{ secrets.YANDEX_CONTAINER_REGISTRY_ID }}/app:${{ github.run_number }} .
-          docker tag cr.yandex/${{ secrets.YANDEX_CONTAINER_REGISTRY_ID }}/app:${{ github.run_number }} cr.yandex/${{ secrets.YANDEX_CONTAINER_REGISTRY_ID }}/app:${{ github.run_number }}_latest
-          docker push cr.yandex/${{ secrets.YANDEX_CONTAINER_REGISTRY_ID }}/app:${{ github.run_number }}
-          docker push cr.yandex/${{ secrets.YANDEX_CONTAINER_REGISTRY_ID }}/app:${{ github.run_number }}_latest
+          docker build -t cr.yandex/${{ secrets.YANDEX_CONTAINER_REGISTRY_ID }}/app:${{ github.event.inputs.release_version }}_fix${{ github.run_number }} .
+          docker tag cr.yandex/${{ secrets.YANDEX_CONTAINER_REGISTRY_ID }}/app:${{ github.event.inputs.release_version }}_fix${{ github.run_number }} cr.yandex/${{ secrets.YANDEX_CONTAINER_REGISTRY_ID }}/app:${{ github.event.inputs.release_version }}_latest
+          docker push cr.yandex/${{ secrets.YANDEX_CONTAINER_REGISTRY_ID }}/app:${{ github.event.inputs.release_version }}_fix${{ github.run_number }}
+          docker push cr.yandex/${{ secrets.YANDEX_CONTAINER_REGISTRY_ID }}/app:${{ github.event.inputs.release_version }}_latest
 
   create-github-tag:
-    needs: build-and-push-docker-image
+    needs: [build-and-push-docker-image]
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -75,11 +75,11 @@ jobs:
 
       - name: Create GitHub tag
         run: |
-          git tag ${GITHUB_EVENT_INPUTS_RELEASE_VERSION}_fix${GITHUB_RUN_NUMBER}
-          git push origin ${GITHUB_EVENT_INPUTS_RELEASE_VERSION}_fix${GITHUB_RUN_NUMBER}
+          git tag ${{ github.event.inputs.release_version }}_fix${{ github.run_number }}
+          git push origin ${{ github.event.inputs.release_version }}_fix${{ github.run_number }}
 
   add-comment-to-issue:
-    needs: create-github-tag
+    needs: [create-github-tag]
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
