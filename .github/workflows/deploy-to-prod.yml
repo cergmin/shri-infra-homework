@@ -1,0 +1,45 @@
+name: Deploy Release to Prod
+
+on:
+  workflow_dispatch:
+    inputs:
+      release_version:
+        description: 'Release version (e.g., 1.0.0)'
+        required: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@v4
+
+      - name: Check Docker image existence
+        run: |
+          if ! docker manifest inspect cr.yandex/${{ secrets.YANDEX_CONTAINER_REGISTRY_ID }}/app:${{ github.event.inputs.release_version }}_latest; then
+            echo "Docker image for release version ${{ github.event.inputs.release_version }}_latest does not exist."
+            exit 1
+          fi
+
+      - name: Set up SSH
+        uses: webfactory/ssh-agent@v0.5.4
+        with:
+          ssh-private-key: ${{ secrets.SSH_PUBLIC_KEY }}
+
+      - name: Deploy Docker image to Prod
+        run: |
+          ssh -o StrictHostKeyChecking=no ${{ secrets.SSH_USER }}@${{ secrets.VM_PUBLIC_IP }} \
+          "docker pull cr.yandex/${{ secrets.YANDEX_CONTAINER_REGISTRY_ID }}/app:${{ github.event.inputs.release_version }}_latest && \
+           docker run -d --restart unless-stopped --name app cr.yandex/${{ secrets.YANDEX_CONTAINER_REGISTRY_ID }}/app:${{ github.event.inputs.release_version }}_latest"
+
+      - name: Create issue content file
+        run: |
+          echo "**Release v${{ github.event.inputs.release_version }} deployed to production**" > ./deploy_issue_content.md
+          echo "**Date**: $(date +%Y-%m-%d)" >> ./deploy_issue_content.md
+          echo "**Author**: ${{ github.actor }}" >> ./deploy_issue_content.md
+
+      - name: Add comment to GitHub Issue
+        uses: peter-evans/create-issue-from-file@v5
+        with:
+          title: Release ${{ github.event.inputs.release_version }} Deployed to Prod
+          content-filepath: ./deploy_issue_content.md
