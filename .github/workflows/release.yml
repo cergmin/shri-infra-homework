@@ -1,0 +1,146 @@
+name: Release Flow
+
+on:
+  workflow_dispatch:
+
+jobs:
+  run-linter:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Run linter
+        run: npm run lint
+
+  run-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Run tests
+        run: npm test
+
+  create-release-branch:
+    needs: [run-linter, run-tests]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Create release branch
+        run: |
+          git config user.name "${{ github.actor }}"
+          git config user.email "${{ github.actor }}@users.noreply.github.com"
+          git checkout -b releases/${{ github.run_number }}
+          git push origin releases/${{ github.run_number }}
+
+  build-and-push-docker-image:
+    needs: [create-release-branch]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to Yandex Container Registry
+        run: echo ${{ secrets.YANDEX_OAUTH_TOKEN }} | docker login --username oauth --password-stdin cr.yandex
+
+      - name: Build and push Docker image
+        run: |
+          docker build -t cr.yandex/${{ secrets.YANDEX_CONTAINER_REGISTRY_ID }}/shri-infra:${{ github.run_number }} .
+          docker tag cr.yandex/${{ secrets.YANDEX_CONTAINER_REGISTRY_ID }}/shri-infra:${{ github.run_number }} cr.yandex/${{ secrets.YANDEX_CONTAINER_REGISTRY_ID }}/shri-infra:${{ github.run_number }}_latest
+          docker push cr.yandex/${{ secrets.YANDEX_CONTAINER_REGISTRY_ID }}/shri-infra:${{ github.run_number }}
+          docker push cr.yandex/${{ secrets.YANDEX_CONTAINER_REGISTRY_ID }}/shri-infra:${{ github.run_number }}_latest
+
+  create-github-tag:
+    needs: [build-and-push-docker-image]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Create GitHub tag
+        run: |
+          git tag v${{ github.run_number }}
+          git push origin v${{ github.run_number }}
+
+  create-github-issue:
+    needs: [create-github-tag]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Get previous release tag
+        id: get-previous-tag
+        run: echo "::set-output name=prev-tag::$(git describe --tags --abbrev=0 HEAD^ || echo 'No previous tag')"
+
+      - name: Get list of commits
+        id: get-commits
+        run: |
+          if [ "$PREV_TAG" != "No previous tag" ]; then
+            COMMITS=$(git log --pretty=format:"%h - %s" $PREV_TAG..HEAD)
+          else
+            COMMITS=$(git log --pretty=format:"%h - %s" HEAD)
+          fi
+          echo "::set-output name=commits::$COMMITS"
+
+      - name: Create issue content file
+        run: |
+          echo "## Release ${{ github.run_number }}" > ./release_issue_content.md
+          echo "**Date**: $(date +%Y-%m-%d)" >> ./release_issue_content.md
+          echo "**Author**: ${{ github.actor }}" >> ./release_issue_content.md
+          echo "**Version**: ${{ github.run_number }}" >> ./release_issue_content.md
+          echo "**Commits**:" >> ./release_issue_content.md
+          echo "${{ steps.get-commits.outputs.commits }}" >> ./release_issue_content.md
+          echo "**Docker image**: cr.yandex/${{ secrets.YANDEX_CONTAINER_REGISTRY_ID }}/shri-infra:${{ github.run_number }}" >> ./release_issue_content.md
+
+      - name: Create GitHub Issue
+        uses: peter-evans/create-issue-from-file@v5
+        with:
+          title: Release ${{ github.run_number }}
+          content-filepath: ./release_issue_content.md
+
+  update-changelog:
+    needs: [create-github-issue]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Get list of commits
+        id: get-commits
+        run: |
+          if [ "$PREV_TAG" != "No previous tag" ]; then
+            COMMITS=$(git log --pretty=format:"%h - %s" $PREV_TAG..HEAD)
+          else
+            COMMITS=$(git log --pretty=format:"%h - %s" HEAD)
+          fi
+          echo "::set-output name=commits::$COMMITS"
+
+      - name: Update CHANGELOG.md
+        run: |
+          echo "## Release ${{ github.run_number }} - $(date +%Y-%m-%d)" > new_changelog.md
+          echo "${{ steps.get-commits.outputs.commits }}" >> new_changelog.md
+          cat CHANGELOG.md >> new_changelog.md
+          mv new_changelog.md CHANGELOG.md
+          git config user.name "${{ github.actor }}"
+          git config user.email "${{ github.actor }}@users.noreply.github.com"
+          git checkout -b update-changelog-${{ github.run_number }}
+          git add CHANGELOG.md
+          git commit -m "Update CHANGELOG.md for release ${{ github.run_number }}"
+          git push origin update-changelog-${{ github.run_number }}
+          
+          curl -X POST \
+            -H "Authorization: token ${{ secrets.TOKEN }}" \
+            -d '{"title":"Update CHANGELOG for release ${{ github.run_number }}","head":"update-changelog-${{ github.run_number }}","base":"main"}' \
+            https://api.github.com/repos/${{ github.repository }}/pulls

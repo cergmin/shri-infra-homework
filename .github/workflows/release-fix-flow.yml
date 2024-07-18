@@ -1,0 +1,94 @@
+name: Release Fix Flow
+
+on:
+  workflow_dispatch:
+    inputs:
+      release_version:
+        description: 'Release version (e.g., 1.0.0)'
+        required: true
+
+jobs:
+  fix-release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Run tests
+        run: npm test
+
+      - name: Create release branch
+        run: |
+          git config user.name "${{ github.actor }}"
+          git config user.email "${{ github.actor }}@users.noreply.github.com"
+          git checkout -b releases/${{ github.event.inputs.release_version }}
+          git push origin releases/${{ github.event.inputs.release_version }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to Yandex Container Registry
+        run: echo ${{ secrets.YANDEX_OAUTH_TOKEN }} | docker login --username oauth --password-stdin cr.yandex
+
+      - name: Build and push Docker image
+        run: |
+          docker build -t cr.yandex/${{ secrets.YANDEX_CONTAINER_REGISTRY_ID }}/app:${{ github.event.inputs.release_version }}_fix${{ github.run_number }} .
+          docker tag cr.yandex/${{ secrets.YANDEX_CONTAINER_REGISTRY_ID }}/app:${{ github.event.inputs.release_version }}_fix${{ github.run_number }} cr.yandex/${{ secrets.YANDEX_CONTAINER_REGISTRY_ID }}/app:${{ github.event.inputs.release_version }}_latest
+          docker push cr.yandex/${{ secrets.YANDEX_CONTAINER_REGISTRY_ID }}/app:${{ github.event.inputs.release_version }}_fix${{ github.run_number }}
+          docker push cr.yandex/${{ secrets.YANDEX_CONTAINER_REGISTRY_ID }}/app:${{ github.event.inputs.release_version }}_latest
+
+      - name: Create GitHub tag for fix release
+        run: |
+          git tag v${{ github.event.inputs.release_version }}_fix${{ github.run_number }}
+          git push origin v${{ github.event.inputs.release_version }}_fix${{ github.run_number }}
+
+      - name: Get previous release tag
+        id: get-previous-tag
+        run: echo "::set-output name=prev-tag::$(git describe --tags --abbrev=0 HEAD^ || echo 'No previous tag')"
+
+      - name: Get list of commits
+        id: get-commits
+        run: |
+          if [ "${{ steps.get-previous-tag.outputs.prev-tag }}" != "No previous tag" ]; then
+            COMMITS=$(git log --pretty=format:"%h - %s" ${{ steps.get-previous-tag.outputs.prev-tag }}..HEAD)
+          else
+            COMMITS=$(git log --pretty=format:"%h - %s" HEAD)
+          fi
+          echo "::set-output name=commits::$COMMITS"
+
+      - name: Create issue content file
+        run: |
+          echo "## Fix Release ${{ github.run_number }}" > ./fix_release_issue_content.md
+          echo "**Date**: $(date +%Y-%m-%d)" >> ./fix_release_issue_content.md
+          echo "**Author**: ${{ github.actor }}" >> ./fix_release_issue_content.md
+          echo "**Commits**:" >> ./fix_release_issue_content.md
+          echo "${{ steps.get-commits.outputs.commits }}" >> ./fix_release_issue_content.md
+          echo "**Docker image**: cr.yandex/${{ secrets.YANDEX_CONTAINER_REGISTRY_ID }}/app:${{ github.event.inputs.release_version }}_fix${{ github.run_number }}" >> ./fix_release_issue_content.md
+
+      - name: Create GitHub Issue
+        uses: peter-evans/create-issue-from-file@v5
+        with:
+          title: Fix Release ${{ github.run_number }} for v${{ github.event.inputs.release_version }}
+          content-filepath: ./fix_release_issue_content.md
+
+      - name: Update CHANGELOG.md
+        run: |
+          echo "## Fix Release ${{ github.run_number }} - $(date +%Y-%m-%d)" > new_changelog.md
+          echo "${{ steps.get-commits.outputs.commits }}" >> new_changelog.md
+          cat CHANGELOG.md >> new_changelog.md
+          mv new_changelog.md CHANGELOG.md
+          git config user.name "${{ github.actor }}"
+          git config user.email "${{ github.actor }}@users.noreply.github.com"
+          git checkout -b update-changelog-v${{ github.event.inputs.release_version }}_fix${{ github.run_number }}
+          git add CHANGELOG.md
+          git commit -m "Update CHANGELOG.md for fix release v${{ github.event.inputs.release_version }}_fix${{ github.run_number }}"
+          git push origin update-changelog-v${{ github.event.inputs.release_version }}_fix${{ github.run_number }}
+
+          # Create a pull request for the changelog update
+          curl -X POST \
+            -H "Authorization: token ${{ secrets.TOKEN }}" \
+            -d '{"title":"Update CHANGELOG for fix release v${{ github.event.inputs.release_version }}_fix${{ github.run_number }}","head":"update-changelog-v${{ github.event.inputs.release_version }}_fix${{ github.run_number }}","base":"main"}' \
+            https://api.github.com/repos/${{ github.repository }}/pulls
