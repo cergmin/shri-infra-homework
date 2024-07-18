@@ -1,31 +1,41 @@
 name: handling-pull-requests
 on:
   pull_request:
-    types: [ opened, edited, reopened ]
+    types: [ opened, edited, reopened, synchronize ]
+env:
+  NODE_VERSION: 20.14.0
+
 jobs:
-  setting-up-project:
+  test:
     runs-on: ubuntu-latest
-    env:
-      NODE_VERSION: 20.14.0
     steps:
       - uses: actions/checkout@v4
-      - name: Use Node.js $NODE_VERSION
+      - name: Use Node.js
         uses: actions/setup-node@v4
         with:
           node-version: "20"
           cache: "npm"
-      - run: npm ci
-      - run: npm run build
-  test:
-    needs: setting-up-project
-    runs-on: ubuntu-latest
-    steps:
-      - name: Running tests
-        run: npm test
+      - name: Install dependencies
+        run: npm ci
+      - name: Build && Test
+        run: |
+          npm run build
+          npm run test
 
   linting:
-    needs: setting-up-project
     runs-on: ubuntu-latest
+
     steps:
-      - name: Running linting
-        run: npm run lint
+      - uses: actions/checkout@v4
+      - name: Use Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+      - name: Install dependencies
+        run: npm ci
+      - name: Build && Lint
+        run: |
+          npm run build
+          npm run lint
+
