@@ -24,14 +24,15 @@ jobs:
             # Pull the Docker image
             docker pull cr.yandex/${{ secrets.YANDEX_CONTAINER_REGISTRY_ID }}/app:${{ github.event.inputs.release_version }}_latest
 
-            # Stop and remove any existing container named 'app' if it exists
-            if docker ps -a --format '{{.Names}}' | grep -q '^app$'; then
-              docker stop app || true
-              docker rm app || true
-            fi
+            # Stop and remove the existing container if it exists
+            docker stop app || true
+            docker rm app || true
 
-            # Run the Docker container with the new image
-            docker run -d --restart unless-stopped --name app cr.yandex/${{ secrets.YANDEX_CONTAINER_REGISTRY_ID }}/app:${{ github.event.inputs.release_version }}_latest
+            # Run the new container
+            docker run -d --name app cr.yandex/${{ secrets.YANDEX_CONTAINER_REGISTRY_ID }}/app:${{ github.event.inputs.release_version }}_latest
+
+            # Execute npm commands inside the running container
+            docker exec -it app sh -c "npm install && npm run build:docker && npm run start:docker"
 
       - name: Create issue content file
         run: |
