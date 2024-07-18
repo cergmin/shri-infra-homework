@@ -20,8 +20,10 @@ jobs:
     needs: setting-up-project
     runs-on: ubuntu-latest
     steps:
+      - run: pwd && ls
       - name: Running tests
         run: npm test
+
 
   linting:
     needs: setting-up-project
