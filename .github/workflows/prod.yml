@@ -26,13 +26,15 @@ jobs:
             exit 1
           fi
 
-      - name: Deploy Docker image to production
-        uses: appleboy/ssh-action@v1.0.3
-        with:
-          host: ${{ secrets.PRODUCTION_SERVER_HOST }}
-          username: ${{ secrets.PRODUCTION_SERVER_USERNAME }}
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
-          port: 22
-          script: |
-            whoami
-            ls -al
+      - name: Deploy Docker image to VM
+        run: |
+          ssh -o StrictHostKeyChecking=no ${{ secrets.PRODUCTION_SERVER_USERNAME }}@${{ secrets.PRODUCTION_SERVER_HOST }} << EOF
+            docker login --username oauth --password ${{ secrets.YANDEX_OAUTH_TOKEN }} cr.yandex
+            docker pull cr.yandex/${{ secrets.YANDEX_CONTAINER_REGISTRY_ID }}/app:${{ github.event.inputs.release_version }}_latest
+            docker stop app || true
+            docker rm app || true
+            docker run -d --name app -p 80:80 cr.yandex/${{ secrets.YANDEX_CONTAINER_REGISTRY_ID }}/app:${{ github.event.inputs.release_version }}_latest
+          EOF
+        env:
+          YANDEX_OAUTH_TOKEN: ${{ secrets.YANDEX_OAUTH_TOKEN }}
+
