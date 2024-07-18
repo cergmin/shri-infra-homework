@@ -16,7 +16,7 @@ jobs:
 
       - name: Check Docker image existence
         run: |
-          if ! docker pull inspect cr.yandex/${{ secrets.YANDEX_CONTAINER_REGISTRY_ID }}/app:${{ github.event.inputs.release_version }}_latest; then
+          if ! docker pull cr.yandex/${{ secrets.YANDEX_CONTAINER_REGISTRY_ID }}/app:${{ github.event.inputs.release_version }}_latest; then
             echo "Docker image for release version ${{ github.event.inputs.release_version }}_latest does not exist."
             exit 1
           fi
