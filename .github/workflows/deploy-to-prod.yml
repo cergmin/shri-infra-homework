@@ -17,25 +17,15 @@ jobs:
           host: ${{ secrets.VM_PUBLIC_IP }}
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
+          passphrase: ${{ secrets.SSH_PASSPHRASE }}
           script: |
             echo "Logging in to Yandex Container Registry"
             echo "${{ secrets.YANDEX_OAUTH_TOKEN }}" | docker login --username oauth --password-stdin cr.yandex
 
-            # Pull the Docker image
             docker pull cr.yandex/${{ secrets.YANDEX_CONTAINER_REGISTRY_ID }}/app:${{ github.event.inputs.release_version }}_latest
-
-            # Stop and remove the existing container if it exists
             docker stop app || true
             docker rm app || true
-
-            # Run the new container
-            docker run -d --name app cr.yandex/${{ secrets.YANDEX_CONTAINER_REGISTRY_ID }}/app:${{ github.event.inputs.release_version }}_latest
-
-            # Install dependencies and build the project inside the container
-            docker exec app sh -c "npm install && npm run build:docker"
-
-            # Start the application inside the container
-            docker exec app sh -c "npm run start:docker"
+            docker run -d --restart unless-stopped --name app cr.yandex/${{ secrets.YANDEX_CONTAINER_REGISTRY_ID }}/app:${{ github.event.inputs.release_version }}_latest
 
       - name: Create issue content file
         run: |
