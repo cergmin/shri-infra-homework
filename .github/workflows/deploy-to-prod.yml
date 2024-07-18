@@ -21,16 +21,14 @@ jobs:
             echo "Logging in to Yandex Container Registry"
             echo "${{ secrets.YANDEX_OAUTH_TOKEN }}" | docker login --username oauth --password-stdin cr.yandex
 
-            # Build the project (if necessary) on the VM
-            npm install # Install dependencies, if needed
-            npm run build # Run build script to generate necessary files
-
             # Pull the Docker image
             docker pull cr.yandex/${{ secrets.YANDEX_CONTAINER_REGISTRY_ID }}/app:${{ github.event.inputs.release_version }}_latest
 
-            # Stop and remove any existing container named 'app'
-            docker stop app || true
-            docker rm app || true
+            # Stop and remove any existing container named 'app' if it exists
+            if docker ps -a --format '{{.Names}}' | grep -q '^app$'; then
+              docker stop app || true
+              docker rm app || true
+            fi
 
             # Run the Docker container with the new image
             docker run -d --restart unless-stopped --name app cr.yandex/${{ secrets.YANDEX_CONTAINER_REGISTRY_ID }}/app:${{ github.event.inputs.release_version }}_latest
