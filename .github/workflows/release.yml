@@ -135,6 +135,12 @@ jobs:
           mv new_changelog.md CHANGELOG.md
           git config user.name "${{ github.actor }}"
           git config user.email "${{ github.actor }}@users.noreply.github.com"
+          git checkout -b update-changelog-${{ github.run_number }}
           git add CHANGELOG.md
           git commit -m "Update CHANGELOG.md for release ${{ github.run_number }}"
-          git push origin HEAD:main
+          git push origin update-changelog-${{ github.run_number }}
+          
+          curl -X POST \
+            -H "Authorization: token ${{ secrets.TOKEN }}" \
+            -d '{"title":"Update CHANGELOG for release ${{ github.run_number }}","head":"update-changelog-${{ github.run_number }}","base":"main"}' \
+            https://api.github.com/repos/${{ github.repository }}/pulls
