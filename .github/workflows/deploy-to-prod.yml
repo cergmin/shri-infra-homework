@@ -31,8 +31,11 @@ jobs:
             # Run the new container
             docker run -d --name app cr.yandex/${{ secrets.YANDEX_CONTAINER_REGISTRY_ID }}/app:${{ github.event.inputs.release_version }}_latest
 
-            # Execute npm commands inside the running container
-            docker exec -it app sh -c "npm install && npm run build:docker && npm run start:docker"
+            # Install dependencies and build the project inside the container
+            docker exec app sh -c "npm install && npm run build:docker"
+
+            # Start the application inside the container
+            docker exec app sh -c "npm run start:docker"
 
       - name: Create issue content file
         run: |
