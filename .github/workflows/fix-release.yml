@@ -1,0 +1,35 @@
+name: Fix Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      release_version:
+        description: 'Release version to fix'
+        required: true
+
+jobs:
+  fix-release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+        with:
+          ref: releases/${{ github.event.inputs.release_version }}
+      - name: Set up Node.js
+        uses: actions/setup-node@v2
+        with:
+          node-version: '18'
+      - name: Install dependencies
+        run: npm ci
+      - name: Run tests
+        run: npm test
+      - name: Build Docker image
+        run: docker build -t cr.yandex/<registry_id>/app:${{ github.event.inputs.release_version }}_fix${{ github.run_number }} .
+      - name: Push Docker image to Container Registry
+        run: |
+          echo ${{ secrets.YANDEX_CLOUD_SERVICE_ACCOUNT_KEY }} | docker login -u json_key --password-stdin https://cr.yandex
+          docker push cr.yandex/<registry_id>/app:${{ github.event.inputs.release_version }}_fix${{ github.run_number }}
+          docker tag cr.yandex/<registry_id>/app:${{ github.event.inputs.release_version }}_fix${{ github.run_number }} cr.yandex/<registry_id>/app:latest
+          docker push cr.yandex/<registry_id>/app:latest
+      - name: Create GitHub Issue Comment
+        run: gh issue comment <issue_number> --body "Fix release notes for ${{ github.event.inputs.release_version }}"
