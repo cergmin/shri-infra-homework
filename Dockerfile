@@ -1,17 +1,22 @@
-FROM node:18
-# Create app directory
+FROM node:20
+
+# Устанавливаем рабочую директорию
 WORKDIR /app
 
-# Install app dependencies
-# A wildcard is used to ensure both package.json AND package-lock.json are copied
-# where available (npm@5+)
+# Копируем package.json и package-lock.json
 COPY package*.json ./
 
+# Устанавливаем зависимости
 RUN npm install
-# If you are building your code for production
-# RUN npm ci --omit=dev
 
-# Bundle app source
+# Копируем исходный код приложения
 COPY . .
+
+# Выполняем сборку приложения (если это необходимо)
+RUN npm run build
+
+# Открываем порт для приложения
 EXPOSE 3000
+
+# Запускаем приложение
 CMD [ "npm", "start" ]
