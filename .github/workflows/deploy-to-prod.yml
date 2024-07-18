@@ -11,19 +11,6 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
-      - name: Login to Yandex Container Registry
-        run: echo ${{ secrets.YANDEX_OAUTH_TOKEN }} | docker login --username oauth --password-stdin cr.yandex
-
-      - name: Check out the repository
-        uses: actions/checkout@v4
-
-      - name: Check Docker image existence
-        run: |
-          if ! docker pull cr.yandex/${{ secrets.YANDEX_CONTAINER_REGISTRY_ID }}/app:${{ github.event.inputs.release_version }}_latest; then
-            echo "Docker image for release version ${{ github.event.inputs.release_version }}_latest does not exist."
-            exit 1
-          fi
-
       - name: SSH and deploy to prod
         uses: appleboy/ssh-action@master
         with:
@@ -32,6 +19,9 @@ jobs:
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           passphrase: ${{ secrets.SSH_PASSPHRASE }}
           script: |
+            echo "Logging in to Yandex Container Registry"
+            echo "${{ secrets.YANDEX_OAUTH_TOKEN }}" | docker login --username oauth --password-stdin cr.yandex
+
             docker pull cr.yandex/${{ secrets.YANDEX_CONTAINER_REGISTRY_ID }}/app:${{ github.event.inputs.release_version }}_latest
             docker stop app || true
             docker rm app || true
