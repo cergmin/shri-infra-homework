@@ -17,7 +17,6 @@ jobs:
           host: ${{ secrets.VM_PUBLIC_IP }}
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
-          passphrase: ${{ secrets.SSH_PASSPHRASE }}
           script: |
             echo "Logging in to Yandex Container Registry"
             echo "${{ secrets.YANDEX_OAUTH_TOKEN }}" | docker login --username oauth --password-stdin cr.yandex
