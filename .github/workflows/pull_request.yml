@@ -2,6 +2,7 @@ name: handling-pull-requests
 on:
   pull_request:
     types: [ opened, edited, reopened, synchronize ]
+
 jobs:
   setting-up-project:
     runs-on: ubuntu-latest
@@ -17,18 +18,34 @@ jobs:
       - run: npm ci
       - run: npm run build
       - run: pwd && ls
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: build
+          path: |
+            .  # Adjust this to the specific path of your build output if needed
+
   test:
     needs: setting-up-project
     runs-on: ubuntu-latest
     steps:
+      - name: Download build artifacts
+        uses: actions/download-artifact@v3
+        with:
+          name: build
+          path: .  # Adjust this to where you want to place the downloaded build
       - run: pwd && ls
       - name: Running tests
         run: npm test
-
 
   linting:
     needs: setting-up-project
     runs-on: ubuntu-latest
     steps:
+      - name: Download build artifacts
+        uses: actions/download-artifact@v3
+        with:
+          name: build
+          path: .  # Adjust this to where you want to place the downloaded build
       - name: Running linting
         run: npm run lint
