@@ -22,8 +22,9 @@ jobs:
         uses: actions/upload-artifact@v3
         with:
           name: build
-          path: |
-            .  # Adjust this to the specific path of your build output if needed
+          path: .  # Adjust this to the specific path of your build output if needed
+      - name: Display structure of downloaded files
+        run: pwd && ls -R
 
   test:
     needs: setting-up-project
