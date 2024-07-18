@@ -24,17 +24,17 @@ jobs:
 
       - name: Check if Docker image exists in Container Registry
         run: |
-          if docker pull cr.yandex/${{ secrets.YANDEX_CONTAINER_REGISTRY_ID }}/app:${{ github.event.inputs.release_version }}_latest; then
-            echo "Docker image cr.yandex/${{ secrets.YANDEX_CONTAINER_REGISTRY_ID }}/app:${{ github.event.inputs.release_version }}_latest found."
+          if docker pull cr.yandex/${{ secrets.YANDEX_CONTAINER_REGISTRY_ID }}/shri-infra:${{ github.event.inputs.release_version }}_latest; then
+            echo "Docker image cr.yandex/${{ secrets.YANDEX_CONTAINER_REGISTRY_ID }}/shri-infra:${{ github.event.inputs.release_version }}_latest found."
           else
-            echo "Error: Docker image cr.yandex/${{ secrets.YANDEX_CONTAINER_REGISTRY_ID }}/app:${{ github.event.inputs.release_version }}_latest not found."
+            echo "Error: Docker image cr.yandex/${{ secrets.YANDEX_CONTAINER_REGISTRY_ID }}/shri-infra:${{ github.event.inputs.release_version }}_latest not found."
             exit 1
           fi
 
       - name: Deploy Docker image to VM
         run: |
           ssh -o StrictHostKeyChecking=no ${{ secrets.VIR_NAME }}@${{ secrets.PRODUCTION_SERVER_HOST }}
-          docker pull cr.yandex/${{ secrets.YANDEX_CONTAINER_REGISTRY_ID }}/app:${{ github.event.inputs.release_version }}_latest
-          docker stop app || true
-          docker rm app || true
-          docker run -d --name app -p 3000:3000 cr.yandex/${{ secrets.YANDEX_CONTAINER_REGISTRY_ID }}/app:${{ github.event.inputs.release_version }}_latest
+          docker pull cr.yandex/${{ secrets.YANDEX_CONTAINER_REGISTRY_ID }}/shri-infra:${{ github.event.inputs.release_version }}_latest
+          docker stop shri-infra || true
+          docker rm shri-infra || true
+          docker run -d --name shri-infra -p 3000:3000 cr.yandex/${{ secrets.YANDEX_CONTAINER_REGISTRY_ID }}/shri-infra:${{ github.event.inputs.release_version }}_latest

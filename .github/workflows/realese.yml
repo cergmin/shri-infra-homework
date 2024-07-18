@@ -57,10 +57,10 @@ jobs:
 
       - name: Build and push Docker image
         run: |
-          docker build -t cr.yandex/${{ secrets.YANDEX_CONTAINER_REGISTRY_ID }}/app:${{ github.run_number }} .
-          docker tag cr.yandex/${{ secrets.YANDEX_CONTAINER_REGISTRY_ID }}/app:${{ github.run_number }} cr.yandex/${{ secrets.YANDEX_CONTAINER_REGISTRY_ID }}/app:${{ github.run_number }}_latest
-          docker push cr.yandex/${{ secrets.YANDEX_CONTAINER_REGISTRY_ID }}/app:${{ github.run_number }}
-          docker push cr.yandex/${{ secrets.YANDEX_CONTAINER_REGISTRY_ID }}/app:${{ github.run_number }}_latest
+          docker build -t cr.yandex/${{ secrets.YANDEX_CONTAINER_REGISTRY_ID }}/shri-infra:${{ github.run_number }} .
+          docker tag cr.yandex/${{ secrets.YANDEX_CONTAINER_REGISTRY_ID }}/shri-infra:${{ github.run_number }} cr.yandex/${{ secrets.YANDEX_CONTAINER_REGISTRY_ID }}/shri-infra:${{ github.run_number }}_latest
+          docker push cr.yandex/${{ secrets.YANDEX_CONTAINER_REGISTRY_ID }}/shri-infra:${{ github.run_number }}
+          docker push cr.yandex/${{ secrets.YANDEX_CONTAINER_REGISTRY_ID }}/shri-infra:${{ github.run_number }}_latest
 
   create-github-tag:
     needs: [build-and-push-docker-image]
@@ -103,7 +103,7 @@ jobs:
           echo "**Version**: ${{ github.run_number }}" >> ./release_issue_content.md
           echo "**Commits**:" >> ./release_issue_content.md
           echo "${{ steps.get-commits.outputs.commits }}" >> ./release_issue_content.md
-          echo "**Docker image**: cr.yandex/${{ secrets.YANDEX_CONTAINER_REGISTRY_ID }}/app:${{ github.run_number }}" >> ./release_issue_content.md
+          echo "**Docker image**: cr.yandex/${{ secrets.YANDEX_CONTAINER_REGISTRY_ID }}/shri-infra:${{ github.run_number }}" >> ./release_issue_content.md
 
       - name: Create GitHub Issue
         uses: peter-evans/create-issue-from-file@v5

@@ -61,10 +61,10 @@ jobs:
 
       - name: Build and push Docker image
         run: |
-          docker build -t cr.yandex/${{ secrets.YANDEX_CONTAINER_REGISTRY_ID }}/app:${{ github.event.inputs.release_version }}_fix${{ github.run_number }} .
-          docker tag cr.yandex/${{ secrets.YANDEX_CONTAINER_REGISTRY_ID }}/app:${{ github.event.inputs.release_version }}_fix${{ github.run_number }} cr.yandex/${{ secrets.YANDEX_CONTAINER_REGISTRY_ID }}/app:${{ github.event.inputs.release_version }}_latest
-          docker push cr.yandex/${{ secrets.YANDEX_CONTAINER_REGISTRY_ID }}/app:${{ github.event.inputs.release_version }}_fix${{ github.run_number }}
-          docker push cr.yandex/${{ secrets.YANDEX_CONTAINER_REGISTRY_ID }}/app:${{ github.event.inputs.release_version }}_latest
+          docker build -t cr.yandex/${{ secrets.YANDEX_CONTAINER_REGISTRY_ID }}/shri-infra:${{ github.event.inputs.release_version }}_fix${{ github.run_number }} .
+          docker tag cr.yandex/${{ secrets.YANDEX_CONTAINER_REGISTRY_ID }}/shri-infra:${{ github.event.inputs.release_version }}_fix${{ github.run_number }} cr.yandex/${{ secrets.YANDEX_CONTAINER_REGISTRY_ID }}/shri-infra:${{ github.event.inputs.release_version }}_latest
+          docker push cr.yandex/${{ secrets.YANDEX_CONTAINER_REGISTRY_ID }}/shri-infra:${{ github.event.inputs.release_version }}_fix${{ github.run_number }}
+          docker push cr.yandex/${{ secrets.YANDEX_CONTAINER_REGISTRY_ID }}/shri-infra:${{ github.event.inputs.release_version }}_latest
 
   create-github-tag:
     needs: [build-and-push-docker-image]
@@ -138,5 +138,5 @@ jobs:
               - **Author**: "Stepan Tokt"
               - **Commits**:
               ${process.env.COMMITS}
-              - **Docker image**: cr.yandex/${{ secrets.YANDEX_CONTAINER_REGISTRY_ID }}/app:${{ github.event.inputs.release_version }}_fix${{ github.run_number }}`
+              - **Docker image**: cr.yandex/${{ secrets.YANDEX_CONTAINER_REGISTRY_ID }}/shri-infra:${{ github.event.inputs.release_version }}_fix${{ github.run_number }}`
             });
