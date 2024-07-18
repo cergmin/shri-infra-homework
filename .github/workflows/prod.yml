@@ -33,12 +33,8 @@ jobs:
 
       - name: Deploy Docker image to VM
         run: |
-          ssh -o StrictHostKeyChecking=no ${{ secrets.VIR_NAME }}@${{ secrets.PRODUCTION_SERVER_HOST }} << 'EOF'
-            docker login --username oauth --password ${{ secrets.YANDEX_OAUTH_TOKEN }} cr.yandex
-            docker pull cr.yandex/${{ secrets.YANDEX_CONTAINER_REGISTRY_ID }}/app:${{ github.event.inputs.release_version }}_latest
-            docker stop app || true
-            docker rm app || true
-            docker run -d --name app -p 3000:3000 cr.yandex/${{ secrets.YANDEX_CONTAINER_REGISTRY_ID }}/app:${{ github.event.inputs.release_version }}_latest
-          EOF
-        env:
-          YANDEX_OAUTH_TOKEN: ${{ secrets.YANDEX_OAUTH_TOKEN }}
+          ssh -o StrictHostKeyChecking=no ${{ secrets.VIR_NAME }}@${{ secrets.PRODUCTION_SERVER_HOST }}
+          docker pull cr.yandex/${{ secrets.YANDEX_CONTAINER_REGISTRY_ID }}/app:${{ github.event.inputs.release_version }}_latest
+          docker stop app || true
+          docker rm app || true
+          docker run -d --name app -p 3000:3000 cr.yandex/${{ secrets.YANDEX_CONTAINER_REGISTRY_ID }}/app:${{ github.event.inputs.release_version }}_latest
