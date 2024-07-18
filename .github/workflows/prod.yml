@@ -11,10 +11,9 @@ jobs:
   deploy-release-to-prod:
     runs-on: ubuntu-latest
     steps:
-      - name: Install Docker
-        run: |
-          sudo apt update
-          sudo apt install docker.io -y
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+        
       - name: Set up SSH
         uses: webfactory/ssh-agent@v0.5.3
         with:
