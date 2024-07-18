@@ -10,7 +10,7 @@ export const About: React.FC = () => {
       <Helmet title="About" />
       <div className="row">
         <div className="col">
-          <h1>About</h1>
+          <h1>Aboutttt</h1>
           <p>
             Author: Tim Kiryachek
           </p>
