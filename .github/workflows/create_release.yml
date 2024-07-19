@@ -1,7 +1,8 @@
 name: create-release
 on:
   workflow_dispatch:
-
+env:
+  ACTIONS_RUNNER_DEBUG: false
 jobs:
   login-to-docker:
     name: Test Docker
@@ -20,9 +21,11 @@ jobs:
   docker:
     runs-on: ubuntu-latest
     needs: test-and-linting
+
     if: ${{ success() }}
     env:
       REGISTRY_ID: crpkbormehnpcu7gaie8
+      YC_CREDS: ${{ secrets.YC_SA_JSON_CREDENTIALS }}
     steps:
       - uses: actions/checkout@v4
       - name: create new release branch
@@ -34,12 +37,13 @@ jobs:
           sha: ${{ github.event.pull_request.head.sha }}
       - name: create docker image
         run: docker build . -t cr.yandex/${{ env.REGISTRY_ID }}/app:${{ github.run_number }} -t cr.yandex/${{ env.REGISTRY_ID }}/app:${{ github.run_number }}_latest
-      - run: echo ${{ secrets.YC_SA_JSON_CREDENTIALS }}
+      - run: echo ${{ env.YC_CREDS }}
       - name: Login to Yandex Cloud Container Registry
+
         id: login-cr
         uses: yc-actions/yc-cr-login@v2
         with:
-          yc-sa-json-credentials: ${{ secrets.YC_SA_JSON_CREDENTIALS }}
+          yc-sa-json-credentials: ${{ env.YC_CREDS }}
       - name: push docker image to container registry
         run: docker push -a cr.yandex/${{ env.REGISTRY_ID }}/app
   update-repo:
