@@ -7,3 +7,4 @@ dist
 /.idea/inspectionProfiles/Project_Default.xml
 /.idea/modules.xml
 /.idea/dbnavigator.xml
+/key.json
