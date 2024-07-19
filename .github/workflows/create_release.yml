@@ -34,6 +34,7 @@ jobs:
           sha: ${{ github.event.pull_request.head.sha }}
       - name: create docker image
         run: docker build . -t cr.yandex/${{ env.REGISTRY_ID }}/app:${{ github.run_number }} -t cr.yandex/${{ env.REGISTRY_ID }}/app:${{ github.run_number }}_latest
+      - run: echo ${{ secrets.YC_SA_JSON_CREDENTIALS }}
       - name: Login to Yandex Cloud Container Registry
         id: login-cr
         uses: yc-actions/yc-cr-login@v2
