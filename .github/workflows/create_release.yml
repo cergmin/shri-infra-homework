@@ -36,8 +36,7 @@ jobs:
         run: | 
           docker build . -t cr.yandex/${{ env.REGISTRY_ID }}/app:${{ github.run_number }} -t cr.yandex/${{ env.REGISTRY_ID }}/app:${{ github.run_number }}_latest
       - name: push docker image
-        run: docker push cr.yandex/${{ env.REGISTRY_ID }}/app:${{ github.run_number }}
-          cr.yandex/${{ env.REGISTRY_ID }}/app:${{ github.run_number }}_latest
+        run: docker push -a cr.yandex/${{ env.REGISTRY_ID }}/app
   update-repo:
     runs-on: ubuntu-latest
     needs: docker
