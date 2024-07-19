@@ -1,0 +1,28 @@
+# name: Start release manually
+
+# on:
+#   workflow_dispatch:
+
+# jobs:
+#   realese:
+#     runs-on: ubuntu-20.04
+
+#     steps:
+#     - name: Checkout
+#       uses: actions/checkout@v2
+
+#     - name: Run linter
+#       uses: npm run lint
+
+#     - name: Run Jest tests
+#       uses: npm run test
+
+#     - name: Release branch creation
+#       run: |
+#         git checkout -b releases/${{ github.run_number }}
+
+#     - name: Create Docker image
+#       run: |
+#         docker build -t cr.yandex/crpq1kj1kt8f62udc6t3/app:${{ github.run_number }} -t cr.yandex/crpq1kj1kt8f62udc6t3/app:${{ github.run_number }}_latest
+#         docker push -t cr.yandex/crpq1kj1kt8f62udc6t3/app:${{ github.run_number }} -t cr.yandex/crpq1kj1kt8f62udc6t3/app:${{ github.run_number }}_latest
+
