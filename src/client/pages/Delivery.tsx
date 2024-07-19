@@ -13,13 +13,6 @@ export const Delivery: React.FC = () => {
       <div className="row">
         <div className="col">
           <h1>Delivery</h1>
-          <p>
-            Swift and Secure Delivery: Experience the convenience of hassle-free
-            shipping with our scratchers. We understand the excitement of
-            receiving your new cat furniture, so we prioritize swift delivery to
-            your doorstep. Rest assured, your order is handled with care every
-            step of the way, ensuring it arrives safely and securely.
-          </p>
           <Image className="w-25 mb-4" />
           <p>
             Track Your Package with Ease: Stay informed and in control of your
