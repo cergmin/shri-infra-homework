@@ -57,6 +57,7 @@ jobs:
       - name: creating issue
         uses: JasonEtco/create-an-issue@v2
         env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           VERSION: ${{ github.run_number }}
       - name: Update CHANGELOG.md
         uses: frdrwrt/write-to-file@v1.3
