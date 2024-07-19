@@ -27,8 +27,10 @@ jobs:
         script: |
           docker login --username oauth --password $YANDEX_OAUTH cr.yandex
           docker pull cr.yandex/${{ env.YANDEX_DOCKER_REGISTRY_ID }}/app:${{ github.event.inputs.release_version }}_latest
-          docker stop app || true
-          docker rm app || true
+          echo "Список контейнеров:"
+          docker ps
+          docker stop $(docker ps -q) || true
+          docker rm $(docker ps -a -q) || true
           docker run -p 3000:3000 cr.yandex/${{ env.YANDEX_DOCKER_REGISTRY_ID }}/app:${{ github.event.inputs.release_version }}_latest
 
     - name: Создание метки времени
