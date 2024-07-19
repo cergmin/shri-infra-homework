@@ -50,7 +50,6 @@ jobs:
     env:
       YANDEX_OAUTH : ${{ secrets.YANDEX_OAUTH  }}
       YANDEX_DOCKER_REGISTRY_ID: ${{ secrets.YANDEX_DOCKER_REGISTRY_ID }}
-      DEPLOY_KEY: ${{ secrets.DEPLOY_KEY }}
     steps:
     - uses: actions/checkout@v4
       name: Переключение в ветку main
@@ -99,13 +98,17 @@ jobs:
           - Автор: ${{ github.actor }}
           - Версия: ${{ env.ENV_TAG }}
           - Docker-образ: cr.yandex/${{ env.YANDEX_DOCKER_REGISTRY_ID }}/app:${{ github.run_number }}
-    - name: Обновление CHANGELOG.md
+    - name: Пуш релизной ветки
+      run: git push origin releases/${{ github.run_number }}
+    - name: Переключение обратно в main
+      run: git checkout main
+    - name: Обновление CHANGELOG.md в main
       run: |
         echo "## Релиз ${{ env.ENV_TAG }}" >> CHANGELOG.md
         echo "Коммит: $(git rev-list -n 1 ${{ env.ENV_TAG }})" >> CHANGELOG.md
         git add CHANGELOG.md
         git commit -m "Обновление CHANGELOG.md для релиза ${{ env.ENV_TAG }}"
-    - name: Пуш в main
+    - name: Push changes to main
       env:
         DEPLOY_KEY: ${{ secrets.DEPLOY_KEY }}
       run: |
