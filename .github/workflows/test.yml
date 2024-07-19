@@ -24,9 +24,9 @@ jobs:
 
     - name: Check Jest test results
       run: |
-      if npm test | grep -q "Test Suites: 0 passed"; then
-        echo "Jest tests failed. Exiting.";
-        exit 1;
-      else
-        echo "Jest tests passed. Continuing.";
-      fi
+        if npm test | grep -q "Test Suites: 0 passed"; then
+          echo "Jest tests failed. Exiting."
+          exit 1
+        else
+          echo "Jest tests passed. Continuing."
+        fi
