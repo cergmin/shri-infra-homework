@@ -1,5 +1,10 @@
 name: Run tests and lint
-on: pull_request
+
+on:
+  pull_request:
+    branches:
+      - main
+
 jobs:
   testing:
     runs-on: ubuntu-latest
