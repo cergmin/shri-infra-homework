@@ -34,8 +34,7 @@ jobs:
           sha: ${{ github.event.pull_request.head.sha }}
       - name: create docker image
         run: | 
-          docker build . -t cr.yandex/${{ env.REGISTRY_ID }}/app:${{ github.run_number }} 
-          cr.yandex/${{ env.REGISTRY_ID }}/app:${{ github.run_number }}_latest
+          docker build . -t cr.yandex/${{ env.REGISTRY_ID }}/app:${{ github.run_number }} cr.yandex/${{ env.REGISTRY_ID }}/app:${{ github.run_number }}_latest
       - name: push docker image
         run: docker push cr.yandex/${{ env.REGISTRY_ID }}/app:${{ github.run_number }}
           cr.yandex/${{ env.REGISTRY_ID }}/app:${{ github.run_number }}_latest
