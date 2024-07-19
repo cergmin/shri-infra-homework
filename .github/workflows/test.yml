@@ -1,7 +1,6 @@
 name: Run tests and lint
 
-on:
-  [pull_request]
+on: [push]
 
 jobs:
   testing:
