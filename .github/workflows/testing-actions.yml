@@ -1,0 +1,28 @@
+name: Linter and Testing CI
+
+on:
+  pull_request:
+    types: [ opened, edited ]
+
+jobs:
+  testing:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Code testing
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.14'
+      - run: npm ci
+      - run: npm run test
+
+  linting:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Code testing
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.14'
+      - run: npm ci
+      - run: npm run lint
