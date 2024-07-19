@@ -50,6 +50,7 @@ jobs:
     env:
       YANDEX_OAUTH : ${{ secrets.YANDEX_OAUTH  }}
       YANDEX_DOCKER_REGISTRY_ID: ${{ secrets.YANDEX_DOCKER_REGISTRY_ID }}
+      DEPLOY_KEY: ${{ secrets.DEPLOY_KEY }}
     steps:
     - uses: actions/checkout@v4
       name: Переключение в ветку main
@@ -75,8 +76,8 @@ jobs:
         docker push cr.yandex/${{ env.YANDEX_DOCKER_REGISTRY_ID }}/app:${{ github.run_number }}_latest
     - name: Настройка Git для пуша
       run: |
-        git config --global user.email "actions@github.com"
-        git config --global user.name "GitHub Actions"
+        git config --global user.name 'github-actions[bot]'
+        git config --global user.email 'github-actions[bot]@users.noreply.github.com'
     - name: Тег в ENV
       run: echo "ENV_TAG=v${{ github.run_number }}" >> $GITHUB_ENV
     - name: Создание тега с номером текущей версии
@@ -104,4 +105,13 @@ jobs:
         echo "Коммит: $(git rev-list -n 1 ${{ env.ENV_TAG }})" >> CHANGELOG.md
         git add CHANGELOG.md
         git commit -m "Обновление CHANGELOG.md для релиза ${{ env.ENV_TAG }}"
-        git push origin releases/${{ github.run_number }}
+    - name: Пуш в main
+      env:
+        DEPLOY_KEY: ${{ secrets.DEPLOY_KEY }}
+      run: |
+        echo "${{ secrets.DEPLOY_KEY }}" > deploy_key
+        chmod 600 deploy_key
+        eval `ssh-agent -s`
+        ssh-add deploy_key
+        git remote set-url origin git@github.com:${{ github.repository }}.git
+        git push origin main
