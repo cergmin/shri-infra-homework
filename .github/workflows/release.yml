@@ -83,6 +83,14 @@ jobs:
       run: |
         git tag $ENV_TAG
         git push origin $ENV_TAG
+    
+    - name: Получение предыдущего тега
+      id: get-previous-tag
+      run: echo "PREVIOUS_TAG=$(git describe --tags --abbrev=0 HEAD^)" >> $GITHUB_ENV
+    - name: Получение логов коммитов между тэгами
+      id: get-commits
+      run: echo "COMMITS=$(git log $PREVIOUS_TAG..$ENV_TAG --pretty=format:'%h %s')" >> $GITHUB_ENV
+
     - name: Создание метки времени
       run: echo "BUILD_TIME=$(TZ=Europe/Moscow date)" >> $GITHUB_ENV
     - name: Создание задачи релиза
@@ -98,6 +106,7 @@ jobs:
           - Автор: ${{ github.actor }}
           - Версия: ${{ env.ENV_TAG }}
           - Docker-образ: cr.yandex/${{ env.YANDEX_DOCKER_REGISTRY_ID }}/app:${{ github.run_number }}
+          - Коммиты: ${{ env.COMMITS }}
     - name: Пуш релизной ветки
       run: git push origin releases/${{ github.run_number }}
     - name: Переключение обратно в main
