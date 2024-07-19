@@ -91,7 +91,10 @@ jobs:
     - name: Получение предыдущего тега
       run: echo "PREVIOUS_TAG=v$(expr ${{ github.run_number }} - 1)" >> $GITHUB_ENV
     - name: Получение логов коммитов между тэгами
-      run: echo "COMMITS=$(git log $PREVIOUS_TAG..HEAD --pretty=format:'%h %s')" >> $GITHUB_ENV
+      run: | 
+        git fetch
+        git branch --set-upstream-to origin/releases/${{ github.run_number }}
+        echo "COMMITS=$(git log $PREVIOUS_TAG..HEAD --prgit etty=format:'%h %s')" >> $GITHUB_ENV
 
     - name: Создание метки времени
       run: echo "BUILD_TIME=$(TZ=Europe/Moscow date)" >> $GITHUB_ENV
