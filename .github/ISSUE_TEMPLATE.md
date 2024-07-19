@@ -1,7 +1,6 @@
 ---
 title: ${{ tools.context.actor }} made release ${{ env.VERSION }}
-assignees:
-labels: 
+assignees: ${{ tools.context.actor }}
 ---
 data: {{ date | date('dddd, MMMM Do') }}
 author: ${{ tools.context.actor }}
