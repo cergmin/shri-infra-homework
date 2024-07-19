@@ -85,10 +85,8 @@ jobs:
         git push origin $ENV_TAG
     
     - name: Получение предыдущего тега
-      id: get-previous-tag
-      run: echo "PREVIOUS_TAG=v$(( ${{ github.run_number }} - 1 ))" >> $GITHUB_ENV
+      run: echo "PREVIOUS_TAG=v$(expr ${{ github.run_number }} - 1)" >> $GITHUB_ENV
     - name: Получение логов коммитов между тэгами
-      id: get-commits
       run: echo "COMMITS=$(git log $PREVIOUS_TAG..$ENV_TAG --pretty=format:'%h %s')" >> $GITHUB_ENV
 
     - name: Создание метки времени
