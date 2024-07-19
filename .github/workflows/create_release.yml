@@ -4,10 +4,7 @@ on:
 
 jobs:
   test-and-linting:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Testing and linting
-        uses: ./.github/workflows/pull_request.yml
+      uses: ./.github/workflows/pull_request.yml
   docker:
     runs-on: ubuntu-latest
     needs: test-and-linting
