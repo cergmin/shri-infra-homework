@@ -1,21 +1,24 @@
-name: Test App
-on: [workflow_dispatch]
+name: Run tests and lint
+on:
+    pull_request:
+      branches:
+        - main
 jobs:
   testing:
     runs-on: ubuntu-latest
     steps:
-      - name: get repository
+      - name: Checkout repo
         uses: actions/checkout@v4
-      - name: setup dependencies
+      - name: Install deps
         run: npm ci
-      - name: run tests
+      - name: Testing
         run: npm run test
   lint:
     runs-on: ubuntu-latest
     steps:
-      - name: get repository
+      - name: Checkout repo
         uses: actions/checkout@v4
-      - name: setup dependencies
+      - name: Install deps
         run: npm ci
-      - name: run lint
+      - name: Linting
         run: npm run lint
