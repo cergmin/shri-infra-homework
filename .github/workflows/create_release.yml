@@ -13,7 +13,10 @@ jobs:
       REGISTRY_ID: crpkbormehnpcu7gaie8
     steps:
       - name: create new release branch
-        run: git checkout -b releases/${{ github.run_number }}
+        uses: peterjgrainger/action-create-branch@v2.2.0
+        with:
+          branch: v${{ github.run_number }}
+          sha: ${{ github.event.pull_request.head.sha }}
       - name: create docker image
         run: | 
           docker build . -t cr.yandex/${{ env.REGISTRY_ID }}/app:${{ github.run_number }} 
