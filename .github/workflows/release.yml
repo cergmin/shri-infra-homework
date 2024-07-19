@@ -86,13 +86,12 @@ jobs:
         
     - name: Пуш релизной ветки
       run: git push origin releases/${{ github.run_number }}
-    - name: Переключение обратно в main
-      run: git checkout main
+
 
     - name: Получение предыдущего тега
       run: echo "PREVIOUS_TAG=v$(expr ${{ github.run_number }} - 1)" >> $GITHUB_ENV
     - name: Получение логов коммитов между тэгами
-      run: echo "COMMITS=$(git log $PREVIOUS_TAG..$ENV_TAG --pretty=format:'%h %s')" >> $GITHUB_ENV
+      run: echo "COMMITS=$(git log $PREVIOUS_TAG..HEAD --pretty=format:'%h %s')" >> $GITHUB_ENV
 
     - name: Создание метки времени
       run: echo "BUILD_TIME=$(TZ=Europe/Moscow date)" >> $GITHUB_ENV
@@ -110,6 +109,9 @@ jobs:
           - Версия: ${{ env.ENV_TAG }}
           - Docker-образ: cr.yandex/${{ env.YANDEX_DOCKER_REGISTRY_ID }}/app:${{ github.run_number }}
           - Коммиты: ${{ env.COMMITS }}
+
+    - name: Переключение обратно в main
+      run: git checkout main
 
     - name: Обновление CHANGELOG.md в main
       run: |
