@@ -83,7 +83,12 @@ jobs:
       run: |
         git tag $ENV_TAG
         git push origin $ENV_TAG
-    
+        
+    - name: Пуш релизной ветки
+      run: git push origin releases/${{ github.run_number }}
+    - name: Переключение обратно в main
+      run: git checkout main
+
     - name: Получение предыдущего тега
       run: echo "PREVIOUS_TAG=v$(expr ${{ github.run_number }} - 1)" >> $GITHUB_ENV
     - name: Получение логов коммитов между тэгами
@@ -105,10 +110,7 @@ jobs:
           - Версия: ${{ env.ENV_TAG }}
           - Docker-образ: cr.yandex/${{ env.YANDEX_DOCKER_REGISTRY_ID }}/app:${{ github.run_number }}
           - Коммиты: ${{ env.COMMITS }}
-    - name: Пуш релизной ветки
-      run: git push origin releases/${{ github.run_number }}
-    - name: Переключение обратно в main
-      run: git checkout main
+
     - name: Обновление CHANGELOG.md в main
       run: |
         echo "## Релиз ${{ env.ENV_TAG }}" >> CHANGELOG.md
