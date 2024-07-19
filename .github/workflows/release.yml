@@ -94,7 +94,7 @@ jobs:
       run: | 
         git fetch
         git branch --set-upstream-to origin/releases/${{ github.run_number }}
-        echo "COMMITS=$(git log $PREVIOUS_TAG..HEAD --prgit etty=format:'%h %s')" >> $GITHUB_ENV
+        echo "COMMITS=$(git log $PREVIOUS_TAG..HEAD --pretty=format:'%h %s')" >> $GITHUB_ENV
 
     - name: Создание метки времени
       run: echo "BUILD_TIME=$(TZ=Europe/Moscow date)" >> $GITHUB_ENV
