@@ -1,31 +1,21 @@
-name: Running tests and linter
-on: pull_request:
-      branches:
-        - main
+name: Test App
+on: [workflow_dispatch]
 jobs:
   testing:
     runs-on: ubuntu-latest
     steps:
-      - name: checkout repo
+      - name: get repository
         uses: actions/checkout@v4
-      - name: installing deps
+      - name: setup dependencies
         run: npm ci
-      - name: testing
+      - name: run tests
         run: npm run test
-      - name: Check Jest test results
-        run: |
-          if npm test | grep -q "Test Suites: 0 passed"; then
-            echo "Jest tests failed. Exiting."
-            exit 1
-          else
-            echo "Jest tests passed. Continuing."
-          fi
   lint:
     runs-on: ubuntu-latest
     steps:
-      - name: checkout repo
+      - name: get repository
         uses: actions/checkout@v4
-      - name: installing deps
+      - name: setup dependencies
         run: npm ci
-      - name: linting
+      - name: run lint
         run: npm run lint
