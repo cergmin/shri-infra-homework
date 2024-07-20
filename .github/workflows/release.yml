@@ -96,6 +96,7 @@ jobs:
         run: |
           docker tag shri-infra:latest cr.yandex/crpk6ta1ej2mrcheq6qs/app:${{ github.run_number }}
           docker tag shri-infra:latest cr.yandex/crpk6ta1ej2mrcheq6qs/app:${{ github.run_number }}_latest
+          sudo usermod -aG docker $USER
           docker push cr.yandex/crpk6ta1ej2mrcheq6qs/app:${{ github.run_number }}
           docker push cr.yandex/crpk6ta1ej2mrcheq6qs/app:${{ github.run_number }}_latest
 
