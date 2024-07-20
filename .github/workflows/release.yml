@@ -73,10 +73,8 @@ jobs:
     needs: add-release-branch
 
     env:
-      PORT: ${{ vars.PORT }}
-      IMAGE_NAME: ${{ vars.IMAGE_NAME }}
-      CONTAINER_NAME: ${{ vars.CONTAINER_NAME }}
-      NODE_VERSION: ${{ vars.NODE_VERSION }}
+      PORT: 3000
+      IMAGE_NAME: kogtetochka
 
     steps:
       - name: Checkout repository
@@ -100,9 +98,9 @@ jobs:
 
       - name: Adding tags and push
         run: |
-          docker tag ${{ vars.IMAGE_NAME }} "cr.yandex/${{ secrets.CR_ID }}/app:${{ github.run_number }}"
+          docker tag ${{ env.IMAGE_NAME }} "cr.yandex/${{ secrets.CR_ID }}/app:${{ github.run_number }}"
           docker push "cr.yandex/${{ secrets.CR_ID }}/app:${{ github.run_number }}"
-          docker tag ${{ vars.IMAGE_NAME }} "cr.yandex/${{ secrets.CR_ID }}/app:${{ github.run_number }}_latest"
+          docker tag ${{ env.IMAGE_NAME }} "cr.yandex/${{ secrets.CR_ID }}/app:${{ github.run_number }}_latest"
           docker push "cr.yandex/${{ secrets.CR_ID }}/app:${{ github.run_number }}_latest"
 
   tag-create-and-cr-update:
@@ -129,7 +127,7 @@ jobs:
 
       - name: Editing changelog
         env:
-          RELEASE_VERSION: ${{ env.RELEASE_VERSION }}
+          RELEASE_VERSION: ${{ github.run_number }}
         run: |
           latest_tag=$(git tag --sort=-creatordate | sed -n '1p')
           previous_tag=$(git tag --sort=-creatordate | sed -n '2p')
