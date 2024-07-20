@@ -6,22 +6,30 @@ on:
     pull_request:
         branches: [main]
 jobs:
-    init:
+    lint-and-tests:
         runs-on: ubuntu-latest
         strategy:
             matrix:
                 node-version: [20.x]
         steps:
+            - name: Checkout repository
             - uses: actions/checkout@v3
+
             - name: Staring Node.js ${{ matrix.node-version }}
               uses: actions/setup-node@v3
               with:
                   node-version: ${{ matrix.node-version }}
-            - name: install modules
+
+            - name: Install dependencies
               run: npm install
-            - name: build project
+
+            - name: Build project
               run: npm run build
-            - name: test
-              run: npm run test
-            - name: lint code
+
+            - name: Run lint
+              if: matrix.job == 'lint'
               run: npm run lint
+
+            - name: Run tests
+              if: matrix.job == 'test'
+              run: npm run test
