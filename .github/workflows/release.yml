@@ -74,7 +74,7 @@ jobs:
 
     env:
       PORT: 3000
-      IMAGE_NAME: kogtetochka
+      IMAGE_NAME: test
 
     steps:
       - name: Checkout repository
