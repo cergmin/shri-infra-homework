@@ -102,19 +102,25 @@ jobs:
         uses: actions/checkout@v3
         with:
           fetch-depth: 0
-
+      - name: Get commit history
+        id: commits
+        run: |
+          PREV_TAG=$(git tag --sort=-creatordate | grep -v "v${{ github.run_number }}" | head -n 1)
+          echo "previous_tag=$previous_tag" >> $GITHUB_ENV
+          COMMITS=$(git log $PREV_TAG..HEAD --pretty=format:'* %s' --abbrev-commit)
+          echo "commits=$commits" >> $GITHUB_ENV
       - name: Create changelog
         id: changelog
         uses: requarks/changelog-action@v1
         with:
           token: ${{ secrets.GH_TOKEN }}
-          tag: ${{ github.ref_name }}
+          tag: ${{ env.previous_tag }}
           writeToFile: false
 
       - name: Create issue
         id: issue
         env:
-          TAG_NAME: ${{ github.ref_name }}
+          TAG_NAME: ${{ env.previous_tag }}
           GH_TOKEN: ${{ secrets.GH_ACCESS_TOKEN }}
         run: |
           TITLE="Release ${{ github.ref_name }}"
