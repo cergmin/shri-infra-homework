@@ -72,8 +72,11 @@ jobs:
       - name: Get commits between versions
         id: get_commits
         run: |
-          commits=$(git log --pretty=oneline ${{ env.previous_version }}..${{ env.current_version }})
+          commits=$(git log --pretty=oneline ${{ env.previous_version }}...${{ env.current_version }})
           echo "commits=$commits" >> $GITHUB_ENV
+
+      - name: Set current date as env variable
+        run: echo "NOW=$(date +'%Y/%m/%d %H:%M:%S')" >> $GITHUB_ENV
 
       - name: Create issue
         uses: dacbd/create-issue-action@main
@@ -84,15 +87,15 @@ jobs:
           title: ${{ github.triggering_actor }} made release v${{ github.run_number }}
           labels: CICD
           body: |
-            date: ${{ github.run_at }}
+            date: $NOW
             author: @${{ github.triggering_actor }}
             version: ${{ github.run_number }}
             docker-image: cr.yandex/${{ env.REGISTRY_ID }}/app:${{ github.run_number }}
-            commits between ${{ env.previous_version }} and ${{ env.current_version }}: ${{ env.commits }}:
+            commits between ${{ env.previous_version }} and ${{ env.current_version }}: ${{ env.commits }}
       - name: Check out the repository
         run: pwd && ls -la
       - name: 📝 Update CHANGELOG.md
         uses: frdrwrt/write-to-file@v1.3
         with:
-          filepath: ./CHANGELOG.md
-          content: ${{ github.run_number }}
+          filepath: CHANGELOG.md
+          content: new release - ${{ github.run_number }}\n
