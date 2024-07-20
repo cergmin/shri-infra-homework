@@ -56,15 +56,14 @@ jobs:
           git push origin --tags
       - name: Set Date
         run: echo "CURRENT_DATE=$(date +'%Y-%m-%d')" >> $GITHUB_ENV
-      - name: Add Fix Comment to Issue
-        run: |
-          issue_number=$(gh issue list --label release-${{ github.event.inputs.release_version }} --json number --jq '.[0].number')
-          gh issue --body "$BODY"
+      - name: Create Release Issue
         env:
           GH_TOKEN: ${{ github.token }}
-          BODY: |
-            ### Fix Release ${{ github.event.inputs.release_version }}_fix${{ github.run_number }} applied.
-            Дата: ${{ env.CURRENT_DATE }}
-            Автор фикса: ${{ github.actor }}
-            Номер версии: ${{ github.event.inputs.release_version }}_fix${{ github.run_number }}
-            Docker образ: [Ссылка](http://cr.yandex/crpq1kj1kt8f62udc6t3/app:${{ github.event.inputs.release_version }}_fix${{ github.run_number }})
+        run: |
+          gh issue create \
+            --title "Release v${{ env.RELEASE_VERSION }}" \
+            --body "$(echo -e "**Date:** $(date -u +"%Y-%m-%dT%H:%M:%SZ")<br> \
+              **Author:** ${{ github.actor }}<br> \
+              **Version:** ${{ env.RELEASE_VERSION }}<br> \
+              **Commits:**<br>${{ env.commit_list }}<br> \
+              **Docker Image:** cr.yandex/${{ secrets.CR_ID }}/app:${{ env.RELEASE_VERSION }}")"
