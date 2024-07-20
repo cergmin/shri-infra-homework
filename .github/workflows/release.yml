@@ -107,7 +107,7 @@ jobs:
 
   tag-create-and-cr-update:
     runs-on: ubuntu-latest
-    needs: build-push docker image
+    needs: build-push-image
 
     steps:
       - name: Checkout repository
