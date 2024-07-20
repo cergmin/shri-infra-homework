@@ -28,7 +28,9 @@ jobs:
 
       - name: test issue
         run: echo $(gh issue list --search "Релиз ${{ github.event.inputs.release_version }}" --json number --jq '.[0].number')
-        
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          
       - name: Create issue for release
         run: |
           gh issue comment $(gh issue list --search "Релиз ${{ github.event.inputs.release_version }}" --json number --jq '.[0].number') \
