@@ -35,10 +35,10 @@ jobs:
         run: echo "${{ secrets.OAUTH }}" | docker login --username oauth --password-stdin cr.yandex
       - name: Tag and Push Docker images to Yandex Container Registry
         run: |
-          docker tag shri-infra:latest cr.yandex/crpk6ta1ej2mrcheq6qs/app:${{ github.run_number }}
-          docker tag shri-infra:latest cr.yandex/crpk6ta1ej2mrcheq6qs/app:${{ github.run_number }}_latest
-          docker push cr.yandex/crpk6ta1ej2mrcheq6qs/app:${{ github.run_number }}
-          docker push cr.yandex/crpk6ta1ej2mrcheq6qs/app:${{ github.run_number }}_latest
+          docker tag shri-infra:latest cr.yandex/crpq1kj1kt8f62udc6t3/app:${{ github.run_number }}
+          docker tag shri-infra:latest cr.yandex/crpq1kj1kt8f62udc6t3/app:${{ github.run_number }}_latest
+          docker push cr.yandex/crpq1kj1kt8f62udc6t3/app:${{ github.run_number }}
+          docker push cr.yandex/crpq1kj1kt8f62udc6t3/app:${{ github.run_number }}_latest
       - name: Set up Git user
         run: |
           git config --global user.email "alexcamastro@yandex.ru"
