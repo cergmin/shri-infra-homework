@@ -83,20 +83,30 @@ jobs:
         run: |
           git tag -a v${{ github.run_number }} -m "Release version ${{ github.run_number }}"
           git push origin v${{ github.run_number }}
-
-      - name: Create GitHub Issue for release
-        env:
-          GITHUB_TOKEN: ${{ secrets.REGISTRY_ID }}
+          
+      - name: Create release label
         run: |
-          echo "Дата: $(date)" >> issue.txt
-          echo "Автор релиза: $GITHUB_ACTOR" >> issue.txt
-          echo "Номер версии: ${{ github.run_number }}" >> issue.txt
-          echo "Список коммитов от предыдущего релизного (или фиксрелизного) тега:" >> issue.txt
-          git log --pretty=format:"- %s (%h)" $(git describe --tags --abbrev=0)..HEAD >> issue.txt
-          echo "Ссылка на docker-образ в Yandex Container Registry:" >> issue.txt
-          echo "${{ secrets.REGISTRY_ID }}/app:${{ github.run_number }}" >> issue.txt
-          gh issue create --title "Релиз ${{ github.run_number }}" --body-file issue.txt
-
+          gh label create "release-${{ github.run_number }}" || echo "Label already exists"
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          
+      - name: Create issue for release
+        run: |
+          gh issue create \
+            --title "$TITLE" \
+            --body "$BODY" \
+            --label "$LABELS"
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          TITLE: "Release ${{ github.run_number }}"
+          BODY: |
+            Дата: $(date)
+            Автор релиза: ${{ github.actor }}
+            Номер версии: ${{ github.run_number }}
+            Список коммитов от предыдущего релизного (или фиксрелизного) тега: 
+            git log --pretty=format:"- %s (%h)" $(git describe --tags --abbrev=0)..HEAD
+            Docker образ: [Ссылка](http://${{ secrets.REGISTRY_ID }}/app:${{ github.run_number }}_latest)
+            
       - name: Update CHANGELOG.md
         run: |
           echo "# Версия ${{ github.run_number }}" | cat - CHANGELOG.md > temp && mv temp CHANGELOG.md
