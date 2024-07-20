@@ -8,15 +8,12 @@ on:
 jobs:
     lint-and-tests:
         runs-on: ubuntu-latest
-        strategy:
-            matrix:
-                node-version: [20.x]
         steps:
-            - uses: actions/checkout@v3
-            - name: Staring Node.js ${{ matrix.node-version }}
-              uses: actions/setup-node@v3
+            - uses: actions/checkout@v4
+            - name: Install Node.js
+              uses: actions/setup-node@v4
               with:
-                  node-version: ${{ matrix.node-version }}
+                  node-version: 20
             - name: Install dependencies
               run: npm install
             - name: Build project
