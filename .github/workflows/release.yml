@@ -72,10 +72,6 @@ jobs:
     runs-on: ubuntu-latest
     needs: add-release-branch
 
-    env:
-      PORT: ${{ vars.PORT }}
-      IMAGE_NAME: ${{ vars.IMAGE_NAME }}
-
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -91,17 +87,17 @@ jobs:
         run: npm ci
 
       - name: Building image
-        run: npm run build:docker
+        run: docker build . -t shri-infra:latest
 
       - name: Authorize YC Container Reg
         run: echo "${{ secrets.OAUTH }}" | docker login --username oauth --password-stdin cr.yandex
 
       - name: Adding tags and push
         run: |
-          docker tag ${{ env.IMAGE_NAME }} "cr.yandex/${{ secrets.CR_ID }}/app:${{ github.run_number }}"
-          docker push "cr.yandex/${{ secrets.CR_ID }}/app:${{ github.run_number }}"
-          docker tag ${{ env.IMAGE_NAME }} "cr.yandex/${{ secrets.CR_ID }}/app:${{ github.run_number }}_latest"
-          docker push "cr.yandex/${{ secrets.CR_ID }}/app:${{ github.run_number }}_latest"
+          docker tag shri-infra:latest cr.yandex/crpk6ta1ej2mrcheq6qs/app:${{ github.run_number }}
+          docker tag shri-infra:latest cr.yandex/crpk6ta1ej2mrcheq6qs/app:${{ github.run_number }}_latest
+          docker push cr.yandex/crpk6ta1ej2mrcheq6qs/app:${{ github.run_number }}
+          docker push cr.yandex/crpk6ta1ej2mrcheq6qs/app:${{ github.run_number }}_latest
 
   tag-create-and-cr-update:
     runs-on: ubuntu-latest
