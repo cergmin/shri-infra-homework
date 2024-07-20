@@ -28,6 +28,7 @@ jobs:
       YC_CREDS: ${{ secrets.YC_SA_JSON_CREDENTIALS }}
     steps:
       - uses: actions/checkout@v4
+
       - name: Create new release branch
         uses: peterjgrainger/action-create-branch@v2.2.0
         env:
@@ -35,8 +36,10 @@ jobs:
         with:
           branch: v${{ github.run_number }}
           sha: ${{ github.event.pull_request.head.sha }}
+
       - name: Create docker image
         run: docker build . -t cr.yandex/${{ env.REGISTRY_ID }}/app:${{ github.run_number }} -t cr.yandex/${{ env.REGISTRY_ID }}/app:${{ github.run_number }}_latest
+
       - name: Login to Yandex Cloud Container Registry
         id: login-cr
         uses: yc-actions/yc-cr-login@v2
@@ -50,23 +53,35 @@ jobs:
     if: ${{ success() }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: 📋 Get Changes between Tags
+        id: changes
+        uses: simbo/changes-between-tags-action@v1
+
       - name: Create git tag
         run: |
           git tag v${{ github.run_number }}
           git push origin v${{ github.run_number }}
+
       - name: Create issue
         uses: dacbd/create-issue-action@main
+        env:
+          REGISTRY_ID: crpkbormehnpcu7gaie8
         with:
           token: ${{ github.token }}
           title: ${{ github.triggering_actor }} made release v${{ github.run_number }}
           labels: CICD
           body: |
-            data: {{ date | date('dddd, MMMM Do') }}
+            date: ${{ github.run_at }}
             author: @${{ github.triggering_actor }}
             version: ${{ github.run_number }}
             docker-image: cr.yandex/${{ env.REGISTRY_ID }}/app:${{ github.run_number }}
             commits:
+
       - name: Update CHANGELOG.md
+        run: pwd && ls -la
         uses: frdrwrt/write-to-file@v1.3
         with:
           filepath: ./CHANGELOG.md
