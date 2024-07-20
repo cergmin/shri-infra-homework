@@ -35,9 +35,6 @@ jobs:
             echo "Logging in to Yandex Container Registry"
             echo "${{ secrets.OAUTH }}" | docker login --username oauth --password-stdin cr.yandex
             docker pull cr.yandex/crpq1kj1kt8f62udc6t3/app:${{ github.event.inputs.release_version }}_latest
-            docker stop dockerone || true
-            docker rm dockerone || true
-            echo "Running the new Docker image"
             docker run -d --name -p 3000:3000 cr.yandex/crpq1kj1kt8f62udc6t3/app:${{ github.event.inputs.release_version }}_latest
 
       - name: Set Date
