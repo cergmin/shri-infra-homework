@@ -34,13 +34,11 @@ jobs:
           script: |
             echo "Logging in to Yandex Container Registry"
             echo "${{ secrets.OAUTH }}" | docker login --username oauth --password-stdin cr.yandex
-            echo "Pulling the latest Docker image"
             docker pull cr.yandex/crpq1kj1kt8f62udc6t3/app:${{ github.event.inputs.release_version }}_latest
-            echo "Stopping and removing old container"
             docker stop dockerone || true
             docker rm dockerone || true
             echo "Running the new Docker image"
-            docker run -d --name dockerone -p 3000:3000 cr.yandex/crpq1kj1kt8f62udc6t3/app:${{ github.event.inputs.release_version }}_latest
+            docker run -d --name -p 3000:3000 cr.yandex/crpq1kj1kt8f62udc6t3/app:${{ github.event.inputs.release_version }}_latest
 
       - name: Set Date
         run: echo "CURRENT_DATE=$(date +'%Y-%m-%d')" >> $GITHUB_ENV
