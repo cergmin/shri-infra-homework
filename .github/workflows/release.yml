@@ -89,7 +89,13 @@ jobs:
           gh label create "release-${{ github.run_number }}" || echo "Label already exists"
         env:
           GITHUB_TOKEN: ${{ github.token }}
-          
+
+      - name: Set release date
+        run: echo "CURRENT_DATE=$(date +'%Y-%m-%d')" >> $GITHUB_ENV
+        
+      - name: Set commits list
+        run: echo "COMMIT_LOG=git log --pretty=format:'- %s (%h)' $(git describe --tags --abbrev=0)..HEAD" >> $GITHUB_ENV
+        
       - name: Create issue for release
         run: |
           gh issue create \
@@ -100,11 +106,10 @@ jobs:
           GITHUB_TOKEN: ${{ github.token }}
           TITLE: "Release ${{ github.run_number }}"
           BODY: |
-            Дата: $(date +"%Y-%m-%d %H:%M:%S")
+            Дата: ${{ env.CURRENT_DATE }}
             Автор релиза: ${{ github.actor }}
             Номер версии: ${{ github.run_number }}
-            Список коммитов от предыдущего релизного (или фиксрелизного) тега: 
-            $(git log --pretty=format:"- %s (%h)" $(git describe --tags --abbrev=0)..HEAD)
+            Список коммитов от предыдущего релизного (или фиксрелизного) тега: ${{ env.COMMIT_LOG }}
             Docker образ: [Ссылка](http://${{ secrets.REGISTRY_ID }}/app:${{ github.run_number }}_latest)
             
       - name: Update CHANGELOG.md
