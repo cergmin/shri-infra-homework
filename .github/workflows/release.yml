@@ -52,12 +52,32 @@ jobs:
         asset_path: ./dist.zip
         asset_name: dist.zip
         asset_content_type: application/zip
-        
-    - name: Create Release Branch
+
+    - name: Set up GitHub CLI
+      run: sudo apt-get install gh
+      
+    - name: Get the date of the release
+      id: release_date
+      run: echo "::set-output name=date::$(date -u)"
+
+    - name: Get the author of the release
+      id: release_author
+      run: echo "::set-output name=author::${{ github.actor }}"
+
+    - name: Get the commits since the last release
+      id: commits
       run: |
-        git config --global user.email "github-actions[bot]@users.noreply.github.com"
-        git config --global user.name "github-actions[bot]"
-        git checkout -b release-${{ github.run_number }}
-        git push origin release-${{ github.run_number }}
+        # Get the latest tag before this release
+        latest_tag=$(git describe --tags --abbrev=0 HEAD^)
+        echo "Latest tag: $latest_tag"
+        
+        # Get the commits since the latest tag
+        commits=$(git log $latest_tag..HEAD --pretty=format:"%h - %s (%an)")
+        echo "$commits"
+        echo "::set-output name=commits::$commits"
+
+    - name: Create issue
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: |
+        gh issue create --title "Release: ${{ github.event.release.tag_name }}" --body "### New Release: ${{ github.event.release.tag_name }}\n\n**Date:** ${{ steps.release_date.outputs.date }}\n\n**Author:** ${{ steps.release_author.outputs.author }}\n\n**Commits since last release:**\n${{ steps.commits.outputs.commits }}"
