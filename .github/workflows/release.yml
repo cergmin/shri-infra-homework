@@ -114,4 +114,4 @@ jobs:
           pr_number=$(gh pr list --base main --head releases/${{ github.run_number }} --json number --jq '.[0].number')
           gh pr merge $pr_number --admin --squash --delete-branch
         env:
-          GH_TOKEN: ${{ secrets.PAT }}
+          GH_TOKEN: ${{ secrets.PAT }}та
