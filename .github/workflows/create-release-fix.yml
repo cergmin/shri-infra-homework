@@ -2,5 +2,90 @@ name: create-release-fix
 on:
   workflow_dispatch:
     inputs:
-
+      release_version:
+        description: 'Release version (only number)'
+        required: true
+        default: '0'
+        type: string
 jobs:
+  switch-branch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Switch to release branch
+        run: |
+          git checkout v${{ inputs.release_version }}
+          echo "Work in $(git rev-parse --abbrev-ref HEAD) branch"
+
+  test-and-linting:
+    uses: ./.github/workflows/pull_request.yml
+  docker:
+    runs-on: ubuntu-latest
+    needs: test-and-linting
+
+    if: ${{ success() }}
+    env:
+      REGISTRY_ID: crpkbormehnpcu7gaie8
+      YC_CREDS: ${{ secrets.YC_SA_JSON_CREDENTIALS }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Create docker image
+        run: | 
+
+          docker rmi ${{ inputs.release_version }}_latest
+          docker build . -t cr.yandex/${{ env.REGISTRY_ID }}/app:${{ inputs.release_version }}_fix${{ github.run_number }} -t cr.yandex/${{ env.REGISTRY_ID }}/app:${{ inputs.release_version }}_latest
+
+      - name: Login to Yandex Cloud Container Registry
+        id: login-cr
+        uses: yc-actions/yc-cr-login@v2
+        with:
+          yc-sa-json-credentials: ${{ env.YC_CREDS }}
+      - name: Push docker image to Container registry
+        run: docker push -a cr.yandex/${{ env.REGISTRY_ID }}/app
+  update-repo:
+    runs-on: ubuntu-latest
+    needs: docker
+    if: ${{ success() }}
+    permissions:
+      issues: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Create git tag
+        run: |
+          git tag v${{ inputs.release_version }}_fix${{ github.run_number }}
+          git push origin v${{ inputs.release_version }}_fix${{ github.run_number }}
+
+      - name: Get current version
+        id: get_current_version
+        run: echo "current_version=v${{ github.run_number }}" >> $GITHUB_ENV
+
+      - name: Get previous version
+        id: get_previous_version
+        run: echo "previous_version=v$(( ${{ github.run_number }} - 1 ))" >> $GITHUB_ENV
+
+      - name: Get commits between versions
+        id: get_commits
+        run: |
+          commits=$(git log --pretty=oneline ${{ env.previous_version }}...${{ env.current_version }})
+          echo "commits=$commits" >> $GITHUB_ENV
+
+      - name: Set current date as env variable
+        run: echo "NOW=$(date +'%Y/%m/%d %H:%M:%S')" >> $GITHUB_ENV
+
+
+      - name: Add comment
+        run: gh issue comment "$NUMBER" --body "$BODY"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+          NUMBER: ${{ github.event.issue.number }}
+          BODY: >
+            date: ${{ env.NOW }}
+            author: @${{ github.triggering_actor }}
+            version: ${{ github.run_number }}
+            docker-image: cr.yandex/${{ env.REGISTRY_ID }}/app:${{ inputs.release_version }}_fix${{ github.run_number }}
+            commits between ${{ env.previous_version }} and ${{ env.current_version }}: ${{ env.commits }}

@@ -1,21 +1,7 @@
 name: create-release
 on:
   workflow_dispatch:
-env:
-  ACTIONS_RUNNER_DEBUG: false
 jobs:
-  login-to-docker:
-    name: Test Docker
-    runs-on: ubuntu-latest
-    permissions:
-      packages: read
-    steps:
-      - name: Login to GitHub Container Registry
-        uses: docker/login-action@v2
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
   test-and-linting:
       uses: ./.github/workflows/pull_request.yml
   docker:
@@ -92,9 +78,8 @@ jobs:
             version: ${{ github.run_number }}
             docker-image: cr.yandex/${{ env.REGISTRY_ID }}/app:${{ github.run_number }}
             commits between ${{ env.previous_version }} and ${{ env.current_version }}: ${{ env.commits }}
-      - name: Check out the repository
-        run: pwd && ls -la
-      - name: 📝 Update CHANGELOG.md
+
+      - name: 📝 Update CHANGELOG.md # TODO: fix updating changelog
         run: |
           echo "## v${{ github.run_number }} - (${{ env.NOW }})" >> CHANGELOG.md
           echo "commits: $commits" >> CHANGELOG.md
