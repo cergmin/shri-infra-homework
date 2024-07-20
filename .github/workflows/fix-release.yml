@@ -72,7 +72,11 @@ jobs:
       - name: Create issue for release
         run: |
           gh issue comment $(gh issue list --search "Релиз ${{ github.event.inputs.release_version }}" --json number --jq '.[0].number') \
-            --body text "$BODY" \
+            --body "$BODY" \
         env:
           GITHUB_TOKEN: ${{ github.token }}
-          BODY: "Дата: ${{ env.CURRENT_DATE }}\nАвтор фикса: ${{ github.actor }}\nСписок коммитов от предыдущего релизного (или фиксрелизного) тега: ${{ steps.get-log.outputs.log_changes }}\nDocker образ: ${{ secrets.REGISTRY_ID }}/app:${{ github.run_number }}_latest" 
+          BODY: |
+            Дата: ${{ env.CURRENT_DATE }}
+            Автор фикса: ${{ github.actor }}
+            Список коммитов от предыдущего релизного (или фиксрелизного) тега: ${{ steps.get-log.outputs.log_changes }}
+            Docker образ: ${{ secrets.REGISTRY_ID }}/app:${{ github.run_number }}_latest 
