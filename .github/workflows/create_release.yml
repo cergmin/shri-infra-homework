@@ -87,7 +87,7 @@ jobs:
           title: ${{ github.triggering_actor }} made release v${{ github.run_number }}
           labels: CICD
           body: |
-            date: $NOW
+            date: ${{ env.NOW }}
             author: @${{ github.triggering_actor }}
             version: ${{ github.run_number }}
             docker-image: cr.yandex/${{ env.REGISTRY_ID }}/app:${{ github.run_number }}
@@ -95,7 +95,9 @@ jobs:
       - name: Check out the repository
         run: pwd && ls -la
       - name: 📝 Update CHANGELOG.md
-        uses: frdrwrt/write-to-file@v1.3
-        with:
-          filepath: CHANGELOG.md
-          content: new release - ${{ github.run_number }}\n
+        run: |
+          echo "## v${{ github.run_number }} - (${{ env.NOW }})" >> CHANGELOG.md
+          echo "commits: $commits" >> CHANGELOG.md
+          echo "" >> CHANGELOG.md
+          echo "" >> CHANGELOG.md
+          cat CHANGELOG.md
