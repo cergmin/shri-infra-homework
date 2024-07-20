@@ -1,0 +1,61 @@
+name: Deploy
+
+on:
+  workflow_dispatch:
+    inputs:
+      release_version:
+        required: true
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: login to CR
+        run: echo "${{ secrets.OAUTH }}" | docker login --username oauth --password-stdin cr.yandex
+
+      - name: Check if exists in CR
+        run: |
+          if ! docker manifest inspect cr.yandex/crpq1kj1kt8f62udc6t3/app:${{ github.event.inputs.release_version }}_latest; then
+            echo "Image not found!" && exit 1
+          fi
+
+      - name: ssh and deploy
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.HOST }}
+          username: ${{ secrets.USER }}
+          key: ${{ secrets.SSH_KEY }}
+          passphrase: ${{ secrets.PASSWORD }}
+          script: |
+            echo "Logging in to Yandex Container Registry"
+            echo "${{ secrets.OAUTH }}" | docker login --username oauth --password-stdin cr.yandex
+            echo "Pulling the latest Docker image"
+            docker pull cr.yandex/crpq1kj1kt8f62udc6t3/app:${{ github.event.inputs.release_version }}_latest
+            echo "Stopping and removing old container"
+            docker stop dockerone || true
+            docker rm dockerone || true
+            echo "Running the new Docker image"
+            docker run -d --name dockerone -p 3000:3000 cr.yandex/crpq1kj1kt8f62udc6t3/app:${{ github.event.inputs.release_version }}_latest
+
+      - name: Set Date
+        run: echo "CURRENT_DATE=$(date +'%Y-%m-%d')" >> $GITHUB_ENV
+
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Update Issue with deployment information
+        run: |
+          issue_number=$(gh issue list --label release-${{ github.event.inputs.release_version }} --json number --jq '.[0].number')
+          gh issue comment "$issue_number" --body "$BODY"
+        env:
+          GH_TOKEN: ${{ github.token }}
+          BODY: |
+            ### Release ${{ github.event.inputs.release_version }} deployed to production.
+            **Дата:** ${{ env.CURRENT_DATE }}
+            **Автор:** ${{ github.actor }}
+            **Docker образ:** [Ссылка](http://cr.yandex/crpq1kj1kt8f62udc6t3/app:${{ github.event.inputs.release_version }}_latest)
