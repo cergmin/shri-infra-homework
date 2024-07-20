@@ -66,7 +66,7 @@ jobs:
           COMMITS=$(git log $PREV_TAG..HEAD --pretty=format:'* %s' --abbrev-commit)
           echo "commits=$COMMITS" >> $GITHUB_ENV
       - name: Create issue
-        uses: actions/github-script@v3
+        uses: actions/github-script@v6
         with:
           script: |
             const version = `v${{ github.run_number }}`;
