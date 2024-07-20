@@ -28,12 +28,8 @@ jobs:
 
     - name: Create ZIP File
       run: |
-        cd ./dist 
-        zip -r ../dist.zip .
+        zip -r dist.zip dist
       shell: bash
-    
-    - name: Checkout code
-      uses: actions/checkout@v2
 
     - name: Create Release
       id: create_release
