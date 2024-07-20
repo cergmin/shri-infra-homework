@@ -78,6 +78,11 @@ jobs:
           docker push cr.yandex/${{ secrets.REGISTRY_ID }}/app:${{ github.run_number }}
           docker push cr.yandex/${{ secrets.REGISTRY_ID }}/app:${{ github.run_number }}_latest
 
+      - name: Set Git config
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+
       - name: Create release tag
         run: |
           git checkout main
@@ -89,8 +94,13 @@ jobs:
         id: release_notes
         run: |
           git fetch --tags # обновляем локальный репозиторий
-          PREV_TAG=$(git describe --tags --abbrev=0 HEAD^) # получаем предыдущий тег
-          COMMITS=$(git log ${PREV_TAG}..HEAD --oneline) # коммиты между предыдущим тегом и текущим состоянием main
+          TAG_COUNT=$(git tag | wc -l) # получаем количество тегов
+          if [ "$TAG_COUNT" -eq 0 ]; then
+            COMMITS=$(git log --oneline) # если тегов нет, получаем все коммиты
+          else
+            PREV_TAG=$(git describe --tags --abbrev=0 HEAD^) # получаем предыдущий тег
+            COMMITS=$(git log ${PREV_TAG}..HEAD --oneline) # коммиты между предыдущим тегом и текущим состоянием main
+          fi
           echo "::set-output name=commits::${COMMITS}" # запоминаем список коммитов в переменную
 
       - name: Create GitHub Issue
