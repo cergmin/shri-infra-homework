@@ -2,13 +2,15 @@ FROM node:20-slim AS base
 
 WORKDIR /app
 
-COPY package.json package-lock.json ./
+RUN corepack enable pnpm && corepack install -g pnpm@latest-9
 
-RUN npm ci
+COPY package.json pnpm-lock.yaml ./
+
+RUN pnpm install --frozen-lockfile --prod
 
 COPY . .
 
 RUN pnpm run build
 
 EXPOSE 3000
-CMD [ "npm", "run", "start" ]
+CMD [ "pnpm", "run", "start" ]

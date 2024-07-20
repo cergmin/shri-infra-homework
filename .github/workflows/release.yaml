@@ -7,9 +7,15 @@ jobs:
 
   docker:
     needs: [test_n_lint]
+    steps:
+      - name: Temp
+        run: echo "nothing for now"
 
   update-changelog-and-create-issue:
     needs: [test_n_lint]
+    steps:
+      - name: Temp
+        run: echo "nothing for now"
 
   create_branch_n_tag:
     needs: [test_n_lint]
