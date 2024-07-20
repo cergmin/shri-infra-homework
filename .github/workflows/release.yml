@@ -68,7 +68,7 @@ jobs:
           git checkout -b ${{ env.BRANCH_NAME }}
           git push origin ${{ env.BRANCH_NAME }}
 
-  build-push docker image:
+  build-push-image:
     runs-on: ubuntu-latest
     needs: add-release-branch
 
@@ -105,7 +105,7 @@ jobs:
           docker tag ${{ env.IMAGE_NAME }} "cr.yandex/${{ secrets.CR_ID }}/app:${{ github.run_number }}_latest"
           docker push "cr.yandex/${{ secrets.CR_ID }}/app:${{ github.run_number }}_latest"
 
-  Tag create and CR update:
+  tag-create-and-cr-update:
     runs-on: ubuntu-latest
     needs: build-push docker image
 
