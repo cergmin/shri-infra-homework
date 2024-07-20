@@ -65,18 +65,20 @@ jobs:
           echo "previous_tag=$PREV_TAG" >> $GITHUB_ENV
           COMMITS=$(git log $PREV_TAG..HEAD --pretty=format:'* %s' --abbrev-commit)
           echo "commits=$COMMITS" >> $GITHUB_ENV
-      - name: Create release issue
+      - name: Create issue
+        uses: actions/github-script@v3
+        with:
+          script: |
+            const version = `v${{ github.run_number }}`;
+            const date = new Date().toISOString().split('T')[0];
+            const author = context.actor;
+            const dockerImage = `${{ secrets.YANDEX_REGISTRY_ID }}/app:${{ github.run_number }}`;
+            const commits = process.env.commits;
+            await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: `Release ${version}`,
+              body: `**Release Date:** ${date}\n**Author:** ${author}\n**Version:** ${version}\n**Commits:**\n${commits}\n**Docker Image:**\n[${dockerImage}](https://cr.yandex/registry/${{ secrets.YANDEX_REGISTRY_ID }}/${{ github.run_number }})`,
+            });
         env:
           GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
-          REPO: ${{ github.repository }}
-          VERSION: ${{ github.run_number }}
-          ACTOR: ${{ github.actor }}
-          DATE: $(date -u +"%Y-%m-%dT%H:%M:%SZ")
-          COMMITS: ${{ env.commits }}
-          DOCKER_IMAGE_URL: "cr.yandex/${{ secrets.YANDEX_REGISTRY_ID }}/app:${{ github.run_number }}"
-        run: |
-          ISSUE_TITLE="Release $VERSION"
-          ISSUE_BODY="**Release Information**\n\n- **Date:** $DATE\n- **Author:** $ACTOR\n- **Version:** $VERSION\n- **Docker Image:** $DOCKER_IMAGE_URL\n\n**Commits since last release:**\n$COMMITS"
-          curl -X POST -H "Authorization: token $GITHUB_TOKEN" \
-            -d "{\"title\": \"$ISSUE_TITLE\", \"body\": \"$ISSUE_BODY\"}" \
-            https://api.github.com/repos/$REPO/issues
