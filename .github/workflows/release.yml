@@ -100,11 +100,11 @@ jobs:
           GITHUB_TOKEN: ${{ github.token }}
           TITLE: "Release ${{ github.run_number }}"
           BODY: |
-            Дата: $(date)
+            Дата: $(date +"%Y-%m-%d %H:%M:%S")
             Автор релиза: ${{ github.actor }}
             Номер версии: ${{ github.run_number }}
             Список коммитов от предыдущего релизного (или фиксрелизного) тега: 
-            git log --pretty=format:"- %s (%h)" $(git describe --tags --abbrev=0)..HEAD
+            $(git log --pretty=format:"- %s (%h)" $(git describe --tags --abbrev=0)..HEAD)
             Docker образ: [Ссылка](http://${{ secrets.REGISTRY_ID }}/app:${{ github.run_number }}_latest)
             
       - name: Update CHANGELOG.md
