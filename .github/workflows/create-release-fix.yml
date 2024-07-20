@@ -36,7 +36,7 @@ jobs:
       - name: Create docker image
         run: | 
 
-          docker rmi ${{ inputs.release_version }}_latest
+          docker rmi cr.yandex/${{ env.REGISTRY_ID }}/app:${{ inputs.release_version }}_latest
           docker build . -t cr.yandex/${{ env.REGISTRY_ID }}/app:${{ inputs.release_version }}_fix${{ github.run_number }} -t cr.yandex/${{ env.REGISTRY_ID }}/app:${{ inputs.release_version }}_latest
 
       - name: Login to Yandex Cloud Container Registry
@@ -79,13 +79,12 @@ jobs:
       - name: Set current date as env variable
         run: echo "NOW=$(date +'%Y/%m/%d %H:%M:%S')" >> $GITHUB_ENV
 
-
       - name: Add comment
         run: gh issue comment "$NUMBER" --body "$BODY"
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GH_REPO: ${{ github.repository }}
-          NUMBER: ${{ github.event.issue.number }}
+          NUMBER: 7
           BODY: >
             date: ${{ env.NOW }}
             author: @${{ github.triggering_actor }}

@@ -1,4 +1,4 @@
-name: create-release-fix
+name: release-to-production
 on:
   workflow_dispatch:
     inputs:
