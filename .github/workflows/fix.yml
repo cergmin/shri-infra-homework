@@ -60,10 +60,11 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
+          commit_list=$(git log --oneline $latest_tag)
           gh issue create \
-            --title "Release v${{ env.RELEASE_VERSION }}" \
+            --title "Release v${{ github.run_number }}" \
             --body "$(echo -e "**Date:** $(date -u +"%Y-%m-%dT%H:%M:%SZ")<br> \
               **Author:** ${{ github.actor }}<br> \
-              **Version:** ${{ env.RELEASE_VERSION }}<br> \
-              **Commits:**<br>${{ env.commit_list }}<br> \
-              **Docker Image:** cr.yandex/${{ secrets.CR_ID }}/app:${{ env.RELEASE_VERSION }}")"
+              **Version:** ${{ github.run_number }}<br> \
+              **Commits:**<br>$commit_list<br> \
+              **Docker Image:** cr.yandex/${{ secrets.CR_ID }}/app:${{ github.run_number }}")"
