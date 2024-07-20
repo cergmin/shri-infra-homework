@@ -69,10 +69,10 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
           REPO: ${{ github.repository }}
-          VERSION: ${{ github.run_number }}
+          VERSION: ${{ env.previous_tag }}
           ACTOR: ${{ github.actor }}
           DATE: $(date -u +"%Y-%m-%dT%H:%M:%SZ")
-          COMMITS: ${{ process.env.commits }}
+          COMMITS: ${{ env.commits }}
           DOCKER_IMAGE_URL: ${{ secrets.YANDEX_REGISTRY_ID }}/app:${{ github.run_number }}
         run: |
           ISSUE_TITLE="Release $VERSION"
