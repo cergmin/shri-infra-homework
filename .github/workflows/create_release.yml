@@ -56,14 +56,24 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: 📋 Get Changes between Tags
-        id: changes
-        uses: simbo/changes-between-tags-action@v1
-
       - name: Create git tag
         run: |
           git tag v${{ github.run_number }}
           git push origin v${{ github.run_number }}
+
+      - name: Get current version
+        id: get_current_version
+        run: echo "current_version=v${{ github.run_number }}" >> $GITHUB_ENV
+
+      - name: Get previous version
+        id: get_previous_version
+        run: echo "previous_version=v$(( ${{ github.run_number }} - 1 ))" >> $GITHUB_ENV
+
+      - name: Get commits between versions
+        id: get_commits
+        run: |
+          commits=$(git log --pretty=oneline ${{ env.previous_version }}..${{ env.current_version }})
+          echo "commits=$commits" >> $GITHUB_ENV
 
       - name: Create issue
         uses: dacbd/create-issue-action@main
@@ -78,7 +88,7 @@ jobs:
             author: @${{ github.triggering_actor }}
             version: ${{ github.run_number }}
             docker-image: cr.yandex/${{ env.REGISTRY_ID }}/app:${{ github.run_number }}
-            commits:
+            commits between ${{ env.previous_version }} and ${{ env.current_version }}: ${{ env.commits }}:
       - name: Check out the repository
         run: pwd && ls -la
       - name: 📝 Update CHANGELOG.md
