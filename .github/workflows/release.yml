@@ -1,0 +1,105 @@
+name: Release
+
+on:
+  workflow_dispatch:
+
+jobs:
+  lint-and-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v2
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Run lint
+        run: npm run lint
+
+      - name: Run test
+        run: npm run test
+
+  release:
+    needs: lint-and-test
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v2
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Build
+        run: npm run build
+
+      - name: Build Docker image
+        env:
+          CONTAINER_REGISTRY: ${{ secrets.REGISTRY_ID }}
+        run: |
+          docker build -t ${{ secrets.REGISTRY_ID }}/app:${{ github.run_number }} .
+          docker tag ${{ secrets.REGISTRY_ID }}/app:${{ github.run_number }} ${{ secrets.REGISTRY_ID }}/app:${{ github.run_number }}_latest
+
+      - name: Verify files copied to Docker context
+        run: ls -la
+
+      - name: Verify Docker image
+        run: docker images
+
+      - name: Push Docker image to Container Registry
+        env:
+          CONTAINER_REGISTRY: ${{ secrets.REGISTRY_ID }}
+        run: |
+          echo ${{ secrets.YC_TOKEN }} | docker login --username oauth --password-stdin cr.yandex
+          docker push ${{ secrets.REGISTRY_ID }}/app:${{ github.run_number }}
+          docker push ${{ secrets.REGISTRY_ID }}/app:${{ github.run_number }}_latest
+
+      - name: Create release branch
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git config --global user.name "github-actions[bot]"
+          git checkout -b releases/${{ github.run_number }}
+          git push https://${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git releases/${{ github.run_number }}
+
+      - name: Create tag for current version
+        run: |
+          git tag -a v${{ github.run_number }} -m "Release version ${{ github.run_number }}"
+          git push origin v${{ github.run_number }}
+
+      - name: Create GitHub Issue for release
+        env:
+          GITHUB_TOKEN: ${{ secrets.REGISTRY_ID }}
+        run: |
+          echo "Дата: $(date)" >> issue.txt
+          echo "Автор релиза: $GITHUB_ACTOR" >> issue.txt
+          echo "Номер версии: ${{ github.run_number }}" >> issue.txt
+          echo "Список коммитов от предыдущего релизного (или фиксрелизного) тега:" >> issue.txt
+          git log --pretty=format:"- %s (%h)" $(git describe --tags --abbrev=0)..HEAD >> issue.txt
+          echo "Ссылка на docker-образ в Yandex Container Registry:" >> issue.txt
+          echo "${{ secrets.REGISTRY_ID }}/app:${{ github.run_number }}" >> issue.txt
+          gh issue create --title "Релиз ${{ github.run_number }}" --body-file issue.txt
+
+      - name: Update CHANGELOG.md
+        run: |
+          echo "# Версия ${{ github.run_number }}" | cat - CHANGELOG.md > temp && mv temp CHANGELOG.md
+          echo "" >> CHANGELOG.md
+          echo "Список коммитов от предыдущего релизного (или фиксрелизного) тега:" >> CHANGELOG.md
+          git log --pretty=format:"- %s (%h)" $(git describe --tags --abbrev=0)..HEAD >> CHANGELOG.md
+          git add CHANGELOG.md
+          git commit -m "Update CHANGELOG for release ${{ github.run_number }}"
+          git push origin main
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
