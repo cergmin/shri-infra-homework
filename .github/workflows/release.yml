@@ -1,0 +1,163 @@
+name: Release
+
+on: [workflow_dispatch]
+
+jobs:
+  linting:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install deps
+        run: npm ci
+
+      - name: Linting
+        run: npm run lint
+
+  tests:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install deps
+        run: npm ci
+
+      - name: Testing
+        run: npm run test
+
+  add-release-branch:
+    runs-on: ubuntu-latest
+    needs:
+      - linting
+      - tests
+
+    outputs:
+      BRANCH_NAME: ${{ steps.set_branch_name.outputs.BRANCH_NAME }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - name: Git config
+        run: |
+          git config --global user.name "Deploying"
+          git config --global user.email "alexcamastro@yandex.ru"
+
+      - name: New branch name
+        id: set_branch_name
+        run: echo "BRANCH_NAME=releases/${{ github.run_number }}" >> $GITHUB_ENV
+
+      - name: Create release branch
+        run: |
+          git checkout -b ${{ env.BRANCH_NAME }}
+          git push origin ${{ env.BRANCH_NAME }}
+
+  build-push docker image:
+    runs-on: ubuntu-latest
+    needs: add-release-branch
+
+    env:
+      PORT: ${{ vars.PORT }}
+      IMAGE_NAME: ${{ vars.IMAGE_NAME }}
+      CONTAINER_NAME: ${{ vars.CONTAINER_NAME }}
+      NODE_VERSION: ${{ vars.NODE_VERSION }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.add-release-branch.outputs.BRANCH_NAME }}
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install deps
+        run: npm ci
+
+      - name: Building image
+        run: npm run build:docker
+
+      - name: Authorize YC Container Reg
+        run: echo "${{ secrets.OAUTH }}" | docker login --username oauth --password-stdin cr.yandex
+
+      - name: Adding tags and push
+        run: |
+          docker tag ${{ env.IMAGE_NAME }} "cr.yandex/${{ secrets.CR_ID }}/app:${{ github.run_number }}"
+          docker push "cr.yandex/${{ secrets.CR_ID }}/app:${{ github.run_number }}"
+          docker tag ${{ env.IMAGE_NAME }} "cr.yandex/${{ secrets.CR_ID }}/app:${{ github.run_number }}_latest"
+          docker push "cr.yandex/${{ secrets.CR_ID }}/app:${{ github.run_number }}_latest"
+
+  Tag create and CR update:
+    runs-on: ubuntu-latest
+    needs: build-push docker image
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          ssh-key: ${{ secrets.SSH_KEY }}
+          ref: main
+
+      - name: Git config
+        run: |
+          git config --global user.name "Deploying"
+          git config --global user.email "alexcamastro@yandex.ru"
+
+      - name: Creating tag
+        run: |
+          git fetch --tags
+          git tag -a "v${{ github.run_number }}" -m "Release version ${{ github.run_number }}" main
+          git push origin "v${{ github.run_number }}"
+
+      - name: Editing changelog
+        env:
+          RELEASE_VERSION: ${{ env.RELEASE_VERSION }}
+        run: |
+          latest_tag=$(git tag --sort=-creatordate | sed -n '1p')
+          previous_tag=$(git tag --sort=-creatordate | sed -n '2p')
+
+          if [ ! -z "$latest_tag" ]; then
+            if [ -z "$previous_tag" ]; then
+              commit_list=$(git log --oneline $latest_tag)
+              commit_message="Update CHANGELOG.md with commit list from repository start to $latest_tag"
+            else
+              commit_list=$(git log --oneline $previous_tag..$latest_tag)
+              commit_message="Update CHANGELOG.md with commit list between $previous_tag and $latest_tag"
+            fi
+
+            echo "commit_list=$commit_list" >> $GITHUB_ENV
+            { printf "### Release %s\n\n%s\n\n%s\n" "$RELEASE_VERSION" "$commit_list" "$(cat CHANGELOG.md)" ; } > CHANGELOG.new && mv CHANGELOG.new CHANGELOG.md
+            git add CHANGELOG.md
+            git commit -m "$commit_message"
+            git push origin main
+          fi
+
+      - name: Creating issue
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh issue create \
+            --title "Release v${{ env.RELEASE_VERSION }}" \
+            --body "$(echo -e "**Date:** $(date -u +"%Y-%m-%dT%H:%M:%SZ")<br> \
+              Author: ${{ github.actor }}<br> \
+              Version: ${{ env.RELEASE_VERSION }}<br> \
+              Commits:<br>${{ env.commit_list }}<br> \
+              Docker Image: cr.yandex/${{ secrets.CR_ID }}/app:${{ env.RELEASE_VERSION }}")"
