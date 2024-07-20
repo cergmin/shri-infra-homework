@@ -32,6 +32,11 @@ jobs:
       YC_CREDS: ${{ secrets.YC_SA_JSON_CREDENTIALS }}
     steps:
       - uses: actions/checkout@v4
+      - name: Login to Yandex Cloud Container Registry
+        id: login-cr
+        uses: yc-actions/yc-cr-login@v2
+        with:
+          yc-sa-json-credentials: ${{ env.YC_CREDS }}
 
       - name: Create docker image
         run: | 
@@ -39,11 +44,6 @@ jobs:
           docker rmi cr.yandex/${{ env.REGISTRY_ID }}/app:${{ inputs.release_version }}_latest
           docker build . -t cr.yandex/${{ env.REGISTRY_ID }}/app:${{ inputs.release_version }}_fix${{ github.run_number }} -t cr.yandex/${{ env.REGISTRY_ID }}/app:${{ inputs.release_version }}_latest
 
-      - name: Login to Yandex Cloud Container Registry
-        id: login-cr
-        uses: yc-actions/yc-cr-login@v2
-        with:
-          yc-sa-json-credentials: ${{ env.YC_CREDS }}
       - name: Push docker image to Container registry
         run: docker push -a cr.yandex/${{ env.REGISTRY_ID }}/app
   update-repo:
