@@ -27,13 +27,13 @@ jobs:
           echo "::set-output name=log_changes::$(git log --pretty=format:"- %s (%h)" $(git describe --tags --abbrev=0)..HEAD)"
 
       - name: test issue
-        run: echo gh issue list --search "Релиз ${{ github.event.inputs.release_version }}" --json number --jq '.[0].number'
+        run: echo gh issue list --search "Release ${{ github.event.inputs.release_version }}" --json number --jq '.[0].number'
         env:
           GITHUB_TOKEN: ${{ github.token }}
           
       - name: Create issue for release
         run: |
-          gh issue comment $(gh issue list --search "Релиз ${{ github.event.inputs.release_version }}" --json number --jq '.[0].number') \
+          gh issue comment $(gh issue list --search "Release ${{ github.event.inputs.release_version }}" --json number --jq '.[0].number') \
             --body "$BODY" \
         env:
           GITHUB_TOKEN: ${{ github.token }}
