@@ -71,7 +71,7 @@ jobs:
         
       - name: Create issue for release
         run: |
-          gh issue comment $(gh issue list --search "Релиз ${{ github.event.inputs.release_version }}" --json number --jq '.[0].number') \
+          gh issue comment $(gh issue list --search "Release ${{ github.event.inputs.release_version }}" --json number --jq '.[0].number') \
             --body "$BODY" \
         env:
           GITHUB_TOKEN: ${{ github.token }}
@@ -79,4 +79,4 @@ jobs:
             Дата: ${{ env.CURRENT_DATE }}
             Автор фикса: ${{ github.actor }}
             Список коммитов от предыдущего релизного (или фиксрелизного) тега: ${{ steps.get-log.outputs.log_changes }}
-            Docker образ: ${{ secrets.REGISTRY_ID }}/app:${{ github.run_number }}_latest 
+            Docker образ: ${{ secrets.REGISTRY_ID }}/app:${{ github.event.inputs.release_version }}_fix${{ github.run_number }}
