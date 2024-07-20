@@ -1,0 +1,42 @@
+name: Fix release
+
+on:
+  workflow_dispatch:
+    inputs:
+      release_version:
+        description: 'Release version'
+        required: true
+
+jobs:
+
+  hotfix:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - uses: actions/setup-node@v2
+        with:
+          node-version: '20.14.0'
+
+      - name: Set release date
+        run: echo "CURRENT_DATE=$(date +'%Y-%m-%d')" >> $GITHUB_ENV
+        
+      - name: Get commits
+        run: |
+          echo "::set-output name=log_changes::$(git log --pretty=format:"- %s (%h)" $(git describe --tags --abbrev=0)..HEAD)"
+
+      - name: test issue
+        run: echo $(gh issue list --search "Релиз ${{ github.event.inputs.release_version }}" --json number --jq '.[0].number')
+        
+      - name: Create issue for release
+        run: |
+          gh issue comment $(gh issue list --search "Релиз ${{ github.event.inputs.release_version }}" --json number --jq '.[0].number') \
+            --body "$BODY" \
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          BODY: |
+            Дата: ${{ env.CURRENT_DATE }}
+            Автор фикса: ${{ github.actor }}
+            Список коммитов от предыдущего релизного (или фиксрелизного) тега: ${{ steps.get-log.outputs.log_changes }}
+            Docker образ: ${{ secrets.REGISTRY_ID }}/app:${{ github.run_number }}_latest 
