@@ -59,7 +59,7 @@ jobs:
       - name: Add Fix Comment to Issue
         run: |
           issue_number=$(gh issue list --label release-${{ github.event.inputs.release_version }} --json number --jq '.[0].number')
-          gh issue comment "comment" --body "$BODY"
+          gh issue --body "$BODY"
         env:
           GH_TOKEN: ${{ github.token }}
           BODY: |
