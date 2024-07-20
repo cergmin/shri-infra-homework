@@ -64,6 +64,10 @@ jobs:
           git checkout -b releases/${{ github.run_number }}
           git push origin releases/${{ github.run_number }}
 
+      - name: Login YC
+        run: |
+          echo ${{ secrets.OAUTH_TOKEN }} | docker login --username oauth --password-stdin cr.yandex
+
       - name: Create Docker image
         run: |
           docker build -t cr.yandex/${{ secrets.REGISTRY_ID }}/app:${{ github.run_number }} .
@@ -71,7 +75,6 @@ jobs:
 
       - name: Push Docker image
         run: |
-          cat key.json | docker login \  --username json_key \  --password-stdin \  cr.yandex
           docker push cr.yandex/${{ secrets.REGISTRY_ID }}/app:${{ github.run_number }}
           docker push cr.yandex/${{ secrets.REGISTRY_ID }}/app:${{ github.run_number }}_latest
 
