@@ -18,7 +18,7 @@ export const Delivery: React.FC = () => {
             shipping with our scratchers. We understand the excitement of
             receiving your new cat furniture, so we prioritize swift delivery to
             your doorstep. Rest assured, your order is handled with care every
-            step of the way, ensuring it arrives safely and securely.
+            step of the way, ensuring it arrives safely and securely.123123
           </p>
           <Image className="w-25 mb-4" />
           <p>
