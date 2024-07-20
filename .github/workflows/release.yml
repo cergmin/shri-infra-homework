@@ -45,7 +45,10 @@ jobs:
         run: npm run build
 
       - name: Log in to the Yandex Container registry
-        run: echo ${{ secrets.YC_TOKEN }} | docker login --username oauth --password-stdin cr.yandex
+        env:
+          YC_TOKEN: ${{ secrets.YC_TOKEN }}
+        run: |
+          echo "$YC_TOKEN" | docker login --username oauth --password-stdin cr.yandex
         
       - name: Build Docker image
         env:
