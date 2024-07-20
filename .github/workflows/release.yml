@@ -100,9 +100,9 @@ jobs:
 
       - name: Adding tags and push
         run: |
-          docker tag ${{ env.IMAGE_NAME }} "cr.yandex/${{ secrets.CR_ID }}/app:${{ github.run_number }}"
+          docker tag ${{ vars.IMAGE_NAME }} "cr.yandex/${{ secrets.CR_ID }}/app:${{ github.run_number }}"
           docker push "cr.yandex/${{ secrets.CR_ID }}/app:${{ github.run_number }}"
-          docker tag ${{ env.IMAGE_NAME }} "cr.yandex/${{ secrets.CR_ID }}/app:${{ github.run_number }}_latest"
+          docker tag ${{ vars.IMAGE_NAME }} "cr.yandex/${{ secrets.CR_ID }}/app:${{ github.run_number }}_latest"
           docker push "cr.yandex/${{ secrets.CR_ID }}/app:${{ github.run_number }}_latest"
 
   tag-create-and-cr-update:
