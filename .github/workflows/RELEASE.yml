@@ -71,6 +71,7 @@ jobs:
 
       - name: Push Docker image
         run: |
+          cat key.json | docker login \  --username json_key \  --password-stdin \  cr.yandex
           docker push cr.yandex/${{ secrets.REGISTRY_ID }}/app:${{ github.run_number }}
           docker push cr.yandex/${{ secrets.REGISTRY_ID }}/app:${{ github.run_number }}_latest
 
