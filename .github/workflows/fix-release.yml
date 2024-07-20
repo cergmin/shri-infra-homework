@@ -72,12 +72,9 @@ jobs:
       - name: Create issue for release
         run: |
           gh issue comment $(gh issue list --search "Релиз ${{ github.event.inputs.release_version }}" --json number --jq '.[0].number') \
-            --title "$TITLE" \
-            --body "$BODY" \
-            --label "$LABELS"
+            --body text "$BODY" \
         env:
           GITHUB_TOKEN: ${{ github.token }}
-          TITLE: "Release ${{ github.run_number }}"
           BODY: |
             Дата: ${{ env.CURRENT_DATE }}
             Автор фикса: ${{ github.actor }}
