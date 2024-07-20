@@ -32,7 +32,7 @@ jobs:
           key: ${{ secrets.SSH_KEY }}
           passphrase: ${{ secrets.PASSWORD }}
           script: |
-            echo "Logging in to Yandex Container Registry"
+            echo ssh alex@${{ secrets.HOST }}
             echo "${{ secrets.OAUTH }}" | docker login --username oauth --password-stdin cr.yandex
             docker pull cr.yandex/crpq1kj1kt8f62udc6t3/app:${{ github.event.inputs.release_version }}_latest
             docker run -d --name -p 3000:3000 cr.yandex/crpq1kj1kt8f62udc6t3/app:${{ github.event.inputs.release_version }}_latest
