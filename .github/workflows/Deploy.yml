@@ -1,0 +1,73 @@
+name: Deploy
+
+on:
+  workflow_dispatch:
+    inputs:
+      release_version:
+        description: 'Version of the release'
+        required: true
+
+jobs:
+  deploy_to_prod:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Log in to the Yandex Container registry
+        env:
+          YC_TOKEN: ${{ secrets.YC_TOKEN }}
+        run: |
+          echo "$YC_TOKEN" | docker login --username oauth --password-stdin cr.yandex
+
+      - name: Check Docker image existence in Container Registry
+        run: |
+          if docker pull ${{ secrets.REGISTRY_ID }}/app:${{ github.event.inputs.release_version }}_latest; then
+            echo "Docker image ${{ secrets.REGISTRY_ID }}/app:${{ github.event.inputs.release_version }}_latest found."
+          else
+            echo "Docker image ${{ secrets.REGISTRY_ID }}/app:${{ github.event.inputs.release_version }}_latest not found."
+            exit 1
+          fi
+
+      - name: Check if some container is running
+        run: |
+          CONTAINER=$(docker ps -aqf "name=shri-infra")
+          if [ -n "$CONTAINER" ]; then
+            docker stop $CONTAINER
+            docker rm $CONTAINER
+          fi  
+
+      - name: Deploy to server
+        env:
+          SERVER_IP: ${{ secrets.VM_IP }}
+          SERVER_USER: ${{ secrets.VM_USER }}
+          SSH_PRIVATE_KEY: ${{ secrets.VM_SSH_KEY }}
+        run: |
+          mkdir -p ~/.ssh
+          echo "$SSH_PRIVATE_KEY" > ~/.ssh/keys
+          chmod 600 ~/.ssh/keys
+          ssh -o StrictHostKeyChecking=no -i ~/.ssh/keys ${{ secrets.VM_USER }}@${{ secrets.VM_IP }} << 'EOF'
+            CONTAINER=$(docker ps -aqf "name=shri-infra")
+            if [ -n "$CONTAINER" ]; then
+              docker stop $CONTAINER
+              docker rm $CONTAINER
+            else
+              echo "This container does not exist yet."
+            fi  
+            
+            sudo docker pull ${{ secrets.REGISTRY_ID }}/app:${{ github.event.inputs.release_version }}_latest
+            sudo docker run -d -p 3000:3000 --name shri-infra ${{ secrets.REGISTRY_ID }}/app:${{ github.event.inputs.release_version }}_latest
+            
+            sleep 10
+          EOF
+
+      - name: Set release date
+        run: echo "CURRENT_DATE=$(date +'%Y-%m-%d')" >> $GITHUB_ENV
+        
+      - name: Comment on issue
+        run: |
+          gh issue comment $(gh issue list --search "Release ${{ github.event.inputs.release_version }}" --json number --jq '.[0].number') \
+            --body "$BODY" \
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          BODY: Релиз ${{ github.event.inputs.release_version }} выкачен в прод ${{ env.CURRENT_DATE }} пользователем $GITHUB_ACTOR.
