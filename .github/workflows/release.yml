@@ -115,6 +115,7 @@ jobs:
             
       - name: Update CHANGELOG.md
         run: |
+          git checkout main
           echo "# Версия ${{ github.run_number }}" | cat - CHANGELOG.md > temp && mv temp CHANGELOG.md
           echo "" >> CHANGELOG.md
           echo "Список коммитов от предыдущего релизного (или фиксрелизного) тега:" >> CHANGELOG.md
