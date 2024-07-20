@@ -58,8 +58,11 @@ jobs:
       - name: Get commits between versions
         id: get_commits
         run: |
-          commits=$(git log --pretty=oneline ${{ env.previous_version }}...${{ env.current_version }})
-          echo "commits=$commits" >> $GITHUB_ENV
+          {
+              echo 'commits<<EOF'
+              git log --pretty=oneline ${{ env.previous_version }}...${{ env.current_version }}
+              echo EOF
+          } >> "$GITHUB_ENV"
 
       - name: Set current date as env variable
         run: echo "NOW=$(date +'%Y/%m/%d %H:%M:%S')" >> $GITHUB_ENV
