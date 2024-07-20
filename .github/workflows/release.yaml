@@ -2,7 +2,7 @@ name: release.yaml
 on: [workflow_dispatch]
 
 env:
-  VERSION: ${{ github.event.inputs.run_number }}
+  VERSION: ${{ github.run_number }}
 
 jobs:
   test_n_lint:
