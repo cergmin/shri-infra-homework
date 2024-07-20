@@ -70,27 +70,13 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
           REPO: ${{ github.repository }}
           VERSION: ${{ github.run_number }}
-          PREVIOUS_TAG: ${{ env.previous_tag }}
           ACTOR: ${{ github.actor }}
-          DATE: ${{ steps.commits.outputs.date }}
+          DATE: $(date -u +"%Y-%m-%dT%H:%M:%SZ")
           COMMITS: ${{ env.commits }}
-          DOCKER_IMAGE_URL: ${{ secrets.YANDEX_REGISTRY_ID }}/app:${{ github.run_number }}
+          DOCKER_IMAGE_URL: "cr.yandex/${{ secrets.YANDEX_REGISTRY_ID }}/app:${{ github.run_number }}"
         run: |
           ISSUE_TITLE="Release $VERSION"
-          ISSUE_BODY=$(cat <<EOF
-          **Release Information**
-        
-          - **Date:** $DATE
-          - **Author:** $ACTOR
-          - **Version:** $VERSION
-          - **Docker Image:** $DOCKER_IMAGE_URL
-        
-          **Commits since last release:**
-          $COMMITS
-          EOF
-          )
-          ISSUE_BODY_ESCAPED=$(echo "$ISSUE_BODY" | jq -R .)
+          ISSUE_BODY="**Release Information**\n\n- **Date:** $DATE\n- **Author:** $ACTOR\n- **Version:** $VERSION\n- **Docker Image:** $DOCKER_IMAGE_URL\n\n**Commits since last release:**\n$COMMITS"
           curl -X POST -H "Authorization: token $GITHUB_TOKEN" \
-            -d "{\"title\":
-              \"$ISSUE_TITLE\", \"body\": $ISSUE_BODY_ESCAPED}" \
+            -d "{\"title\": \"$ISSUE_TITLE\", \"body\": \"$ISSUE_BODY\"}" \
             https://api.github.com/repos/$REPO/issues
