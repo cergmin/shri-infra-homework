@@ -95,8 +95,13 @@ jobs:
         
       - name: Get commits
         run: |
-          echo "::set-output name=log_changes::$(git log --pretty=format:"- %s (%h)" $(git describe --tags --abbrev=0)..HEAD)"
-        
+          if [ "${{ steps.get-previous-tag.outputs.prev-tag }}" != "No previous tag" ]; then
+            COMMITS=$(git log --pretty=format:"%h - %s" ${{ steps.get-previous-tag.outputs.prev-tag }}..HEAD)
+          else
+            COMMITS=$(git log --pretty=format:"%h - %s" HEAD)
+          fi
+          echo "::set-output name=log_changes::$COMMITS"
+          
       - name: Create issue for release
         run: |
           gh issue create \
