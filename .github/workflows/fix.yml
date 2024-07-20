@@ -39,7 +39,7 @@ jobs:
       - name: Build Docker image
         run: docker build . -t shri-infra:latest
       - name: Log in to Yandex Container Registry
-        run: echo "${{ secrets.CR_ID }}" | docker login --username oauth --password-stdin cr.yandex
+        run: echo "${{ secrets.OAUTH }}" | docker login --username oauth --password-stdin cr.yandex
       - name: Tag and Push Docker images to Yandex Container Registry
         run: |
           docker tag shri-infra:latest cr.yandex/crpq1kj1kt8f62udc6t3/app:${{ github.event.inputs.release_version }}_fix${{ github.run_number }}
