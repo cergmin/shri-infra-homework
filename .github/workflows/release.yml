@@ -12,6 +12,23 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+    - name: Set up Nodejs
+      uses: actions/setup-node@v2
+      with:
+        node-version: '18'
+        
+    - name: Install dependencies
+      run: npm i
+
+    - name: Run build
+      run: npm run build
+
+    - name: Create ZIP File
+      run: |
+        cd ./dist 
+        zip -r ../dist.zip .
+      shell: bash
+    
     - name: Checkout code
       uses: actions/checkout@v2
 
@@ -33,6 +50,6 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
         upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: ./asset.zip
-        asset_name: asset.zip
+        asset_path: ./dist.zip
+        asset_name: dist.zip
         asset_content_type: application/zip
