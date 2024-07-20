@@ -13,7 +13,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Temp
-        run: echo "nothing for now"
+        run: echo "nothing for now $VERSION"
 
   update-changelog-and-create-issue:
     needs: [test_n_lint]
