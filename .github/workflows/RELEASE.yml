@@ -86,29 +86,45 @@ jobs:
       - name: Create release tag
         run: |
           git checkout main
-          LAST_COMMIT=$(git rev-parse HEAD)  # Получаем хеш последнего коммита на главной ветке
-          git tag -a v${{ github.run_number }} $LAST_COMMIT -m "Release ${{ github.run_number }}"  # Создаём тег с номером текущего run_number и указываем хеш коммита
-          git push origin v${{ github.run_number }}
+          LAST_COMMIT=$(git rev-parse HEAD) # Получаем хеш последнего коммита на главной ветке
+          TAG_NAME=v${{ github.run_number }}
+
+          # если существует тег с таким именем, то не создаем новый
+          if git rev-parse "$TAG_NAME" >/dev/null 2>&1; then
+            echo "Tag $TAG_NAME already exists. Skipping tag creation."
+           # иначе создаём тег с номером текущего run_number и указываем хеш коммита
+          else
+            git tag -a "$TAG_NAME" "$LAST_COMMIT" -m "Release ${{ github.run_number }}" 
+            git push origin "$TAG_NAME"
+          fi
 
       - name: Generate release notes
         id: release_notes
         run: |
           git fetch --tags # обновляем локальный репозиторий
-          TAG_COUNT=$(git tag | wc -l) # получаем количество тегов
-          if [ "$TAG_COUNT" -eq 0 ]; then
-            COMMITS=$(git log --oneline) # если тегов нет, получаем все коммиты
-          else
-            PREV_TAG=$(git describe --tags --abbrev=0 HEAD^) # получаем предыдущий тег
-            COMMITS=$(git log ${PREV_TAG}..HEAD --oneline) # коммиты между предыдущим тегом и текущим состоянием main
-          fi
-          echo "::set-output name=commits::${COMMITS}" # запоминаем список коммитов в переменную
+           TAG_COUNT=$(git tag | wc -l) # чекаем количество тегов
+
+           if [ "$TAG_COUNT" -eq 0 ]; then # если их нет, берем все коммиты
+             COMMITS=$(git log --oneline)
+           else
+             PREV_TAG=$(git describe --tags --abbrev=0 HEAD^) || true
+             if [ -z "$PREV_TAG" ]; then
+               COMMITS=$(git log --oneline) # если предыдущий тег не найден, берем все коммиты
+             else
+               COMMITS=$(git log ${PREV_TAG}..HEAD --oneline)
+             fi
+           fi
+           # пишем список коммитов в переменную
+           echo "::set-output name=commits::${COMMITS}"
 
       - name: Create GitHub Issue
         uses: actions/github-script@v6
         with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
+          github-token: ${{ secrets.GIT_TOKEN }}
           script: |
-            github.issues.create({
+            const { issues, context } = require('@actions/github');
+            const commits = process.env['commits'] || 'No commits found';
+            issues.create({
               owner: context.repo.owner,
               repo: context.repo.repo,
               title: `Release ${{ github.run_number }}`,
@@ -116,19 +132,23 @@ jobs:
               **Date:** ${new Date().toISOString().split('T')[0]}
               **Author:** ${context.actor}
               **Version:** ${{ github.run_number }}
-              **Commits:** ${{ steps.release_notes.outputs.commits }}
+              **Commits:** ${commits}
               **Docker Image:** cr.yandex/${{ secrets.REGISTRY_ID }}/app:${{ github.run_number }}
               `
-            })
+            });
 
       - name: Update CHANGELOG.md
         run: |
-          echo "## ${{ github.run_number }} - $(date +'%Y-%m-%d')" > temp.md # во временный файл пишем новую версию
-          echo "${{ steps.release_notes.outputs.commits }}" >> temp.md # список коммитов
-          cat CHANGELOG.md >> temp.md # копируем весь прошлый контент ченнджлога в темп
-          mv temp.md CHANGELOG.md
+          echo "## ${{ github.run_number }} - $(date +'%Y-%m-%d')" > log.md # во временный файл пишем новую версию
+          echo "${{ steps.release_notes.outputs.commits }}" >> log.md # список коммитов
+          cat CHANGELOG.md >> log.md # копируем весь прошлый контент ченнджлога
+          mv log.md CHANGELOG.md # заменяем log-файл на `CHANGELOG.md`
+
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
+
           git add CHANGELOG.md
           git commit -m "Update CHANGELOG.md for release ${{ github.run_number }}"
+
+          # пушим изменения в мейн
           git push origin main
