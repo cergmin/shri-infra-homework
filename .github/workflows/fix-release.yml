@@ -1,0 +1,83 @@
+name: Fix Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      release_version:
+        description: "Release version to fix"
+        required: true
+        default: "1"
+
+jobs:
+  fix_release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v2
+        with:
+          node-version: "20.14"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run linter and tests
+        run: |
+          npm run lint &
+          npm test &
+          wait
+
+      - name: Create fix branch
+        run: |
+          git checkout -b fix/${{ github.event.inputs.release_version }}_fix${{ github.run_number }} releases/${{ github.event.inputs.release_version }}
+          git push --set-upstream origin fix/${{ github.event.inputs.release_version }}_fix${{ github.run_number }}
+
+      - name: Build Docker image
+        run: |
+          docker build -t cr.yandex/${{ secrets.YANDEX_REGISTRY_ID }}/app:${{ github.event.inputs.release_version }}_fix${{ github.run_number }} .
+          docker tag cr.yandex/${{ secrets.YANDEX_REGISTRY_ID }}/app:${{ github.event.inputs.release_version }}_fix${{ github.run_number }} cr.yandex/${{ secrets.YANDEX_REGISTRY_ID }}/app:latest
+
+      - name: Login to Yandex Container Registry
+        env:
+          YANDEX_OAUTH_TOKEN: ${{ secrets.YANDEX_OAUTH_TOKEN }}
+        run: echo $YANDEX_OAUTH_TOKEN | docker login --username oauth --password-stdin cr.yandex
+
+      - name: Push Docker image
+        run: |
+          docker push cr.yandex/${{ secrets.YANDEX_REGISTRY_ID }}/app:${{ github.event.inputs.release_version }}_fix${{ github.run_number }}
+          docker push cr.yandex/${{ secrets.YANDEX_REGISTRY_ID }}/app:latest
+
+      - name: Tag fix release
+        run: |
+          git tag ${ { github.event.inputs.release_version } }_fix${ { github.run_number } }
+          git push origin ${ { github.event.inputs.release_version } }_fix${ { github.run_number } }
+
+      - name: Update GitHub Issue
+        uses: peter-evans/create-or-update-comment@v1
+        with:
+          issue-number: 1
+          body: |
+            ## Fix release ${{ github.event.inputs.release_version }}_fix${{ github.run_number }}
+            - **Date**: $(date)
+            - **Author**: ${{ github.actor }}
+            - **Docker Image**: cr.yandex/${{ secrets.YANDEX_REGISTRY_ID }}/app:${{ github.event.inputs.release_version }}_fix${{ github.run_number }}
+
+      - name: Configure Git
+        run: |
+          git config --global user.email "${{ github.actor }}@example.com"
+          git config --global user.name "${{ github.actor }}"
+
+      - name: Update CHANGELOG.md in main branch
+        env:
+          GH_PAT: ${{ secrets.GH_PAT }}
+        run: |
+          git checkout main
+          git pull origin main
+          echo "## Fix release ${{ github.event.inputs.release_version }}_fix${{ github.run_number }} by ${{ github.actor }}" >> CHANGELOG.md
+          echo "Date: $(date)" >> CHANGELOG.md
+          echo "Docker Image: cr.yandex/${{ secrets.YANDEX_REGISTRY_ID }}/app:${{ github.event.inputs.release_version }}_fix${{ github.run_number }}" >> CHANGELOG.md
+          git add CHANGELOG.md
+          git commit -m "Update CHANGELOG for fix release ${{ github.event.inputs.release_version }}_fix${{ github.run_number }} by ${{ github.actor }}"
+          git push https://<your-username>:${{ secrets.GH_PAT }}@github.com/<your-username>/<your-repo>.git main
