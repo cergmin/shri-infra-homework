@@ -40,9 +40,8 @@ jobs:
 
       - name: Create docker image
         run: | 
-
-#          docker rmi cr.yandex/${{ env.REGISTRY_ID }}/app:${{ inputs.release_version }}_latest
           docker build . -t cr.yandex/${{ env.REGISTRY_ID }}/app:${{ inputs.release_version }}_fix${{ github.run_number }} -t cr.yandex/${{ env.REGISTRY_ID }}/app:${{ inputs.release_version }}_latest
+#          docker rmi cr.yandex/${{ env.REGISTRY_ID }}/app:${{ inputs.release_version }}_latest
 
       - name: Push docker image to Container registry
         run: docker push -a cr.yandex/${{ env.REGISTRY_ID }}/app
