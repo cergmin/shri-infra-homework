@@ -61,8 +61,9 @@ jobs:
       - name: Get commit history
         id: commits
         run: |
-          COMMITS=$(git log v${{ github.run_number }}..HEAD --oneline)
-          echo "::set-output name=commits::$COMMITS"
+          PREV_TAG=$(git describe --tags --abbrev=0)
+          COMMITS=$(git log $PREV_TAG..HEAD --oneline)
+          echo "commits=$COMMITS" >> $GITHUB_ENV
       - name: Create release issue
         env:
           GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
