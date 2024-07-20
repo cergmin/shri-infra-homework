@@ -1,0 +1,113 @@
+name: Release Workflow
+
+on:
+  workflow_dispatch:
+
+jobs:
+  lint-and-test:
+    runs-on: ubuntu-latest
+    uses: ./.github/workflows/github-actions.yml
+
+  create-release-branch:
+    runs-on: ubuntu-latest
+    needs: lint-and-test
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      - name: Create release branch
+        run: |
+          git config --global user.name "${{ github.actor }}"
+          git config --global user.email "${{ github.actor }}@users.noreply.github.com"
+          git checkout -b releases/${{ github.run_number }}
+          git push origin releases/${{ github.run_number }}
+
+  build-and-push-docker-image:
+    runs-on: ubuntu-latest
+    needs: create-release-branch
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+
+      - name: Log in to Yandex Cloud Container Registry
+        run: docker login --username oauth --password ${{ secrets.YANDEX_CLOUD_CR_TOKEN }} cr.yandex
+
+      - name: Build and push Docker image
+        run: |
+          docker build -t cr.yandex/crpvtl1jahgdv5iobshc/shri-infra:${{ github.run_number }} .
+          docker tag cr.yandex/crpvtl1jahgdv5iobshc/shri-infra:${{ github.run_number }} cr.yandex/crpvtl1jahgdv5iobshc/shri-infra:${{ github.run_number }}_latest
+          docker push cr.yandex/crpvtl1jahgdv5iobshc/shri-infra:${{ github.run_number }}
+          docker push cr.yandex/crpvtl1jahgdv5iobshc/shri-infra:${{ github.run_number }}_latest
+
+  create-release-tag:
+    runs-on: ubuntu-latest
+    needs: build-and-push-docker-image
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      - name: Create release tag
+        run: |
+          git tag ${{
+    github.run_number }} -m "Release ${{ github.run_number }}"
+          git push origin ${{
+    github.run_number }}
+
+  create-issue:
+    runs-on: ubuntu-latest
+    needs: create-release-tag
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      - name: Get previous tag
+        id: prev-tag
+        run: echo "::set-output name=tag::$(git describe --tags --abbrev=0 HEAD^)"
+
+      - name: Get commit list
+        id: commits
+        run: echo "::set-output name=list::$(git log ${{ steps.prev-tag.outputs.tag }}..HEAD --oneline)"
+
+      - name: Create release issue
+        uses: peter-evans/create-issue-from-file@v4
+        with:
+          title: Release ${{ github.run_number }}
+          content-file: |
+            Date: $(date +'%Y-%m-%d')
+            Author: ${{ github.actor }}
+            Version: ${{ github.run_number }}
+            Commits:
+            ${{ steps.commits.outputs.list }}
+            Docker image link: cr.yandex/crpvtl1jahgdv5iobshc/shri-infra:${{ github.run_number }}
+
+  update-changelog:
+    runs-on: ubuntu-latest
+    needs: create-issue
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      - name: Get previous tag
+        id: prev-tag
+        run: echo "::set-output name=tag::$(git describe --tags --abbrev=0 HEAD^)"
+
+      - name: Get commit list
+        id: commits
+        run: echo "::set-output name=list::$(git log ${{ steps.prev-tag.outputs.tag }}..HEAD --oneline)"
+
+      - name: Update CHANGELOG.md
+        run: |
+          echo "## ${{ github.run_number }} - $(date +'%Y-%m-%d')" > tmpfile
+          echo "" >> tmpfile
+          echo "${{ steps.commits.outputs.list }}" >> tmpfile
+          echo "" >> tmpfile
+          cat CHANGELOG.md >> tmpfile
+          mv tmpfile CHANGELOG.md
+          git config --global user.name "${{ github.actor }}"
+          git config --global user.email "${{ github.actor }}@users.noreply.github.com"
+          git add CHANGELOG.md
+          git commit -m "Update CHANGELOG for release ${{ github.run_number }}"
+          git push origin main
