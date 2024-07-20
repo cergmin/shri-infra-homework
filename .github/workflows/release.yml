@@ -96,9 +96,8 @@ jobs:
         run: |
           docker tag shri-infra:latest cr.yandex/crpk6ta1ej2mrcheq6qs/app:${{ github.run_number }}
           docker tag shri-infra:latest cr.yandex/crpk6ta1ej2mrcheq6qs/app:${{ github.run_number }}_latest
-          sudo usermod -aG docker $USER
-          docker push cr.yandex/сrpq1kj1kt8f62udc6t3/app:${{ github.run_number }}
-          docker push cr.yandex/crpq1kj1kt8f62udc6t3/app:${{ github.run_number }}_latest
+          docker push cr.yandex/${{ secrets.CR_ID }}/app:${{ github.run_number }}
+          docker push cr.yandex/${{ secrets.CR_ID }}/app:${{ github.run_number }}_latest
 
   tag-create-and-cr-update:
     runs-on: ubuntu-latest
