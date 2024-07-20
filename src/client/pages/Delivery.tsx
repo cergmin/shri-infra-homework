@@ -19,7 +19,7 @@ export const Delivery: React.FC = () => {
             receiving your new cat furniture, so we prioritize swift delivery to
             your doorstep. Rest assured, your order is handled with care every
             step of the way, ensuring it arrives safely and securely.123123324342
-          </p>
+          </p>2
           <Image className="w-25 mb-4" />
           <p>
             Track Your Package with Ease: Stay informed and in control of your
