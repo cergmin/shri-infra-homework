@@ -1,0 +1,30 @@
+# Игнорирование node_modules
+node_modules/
+
+# Игнорирование локальных конфигурационных файлов
+.env
+.DS_Store
+
+# Логи
+logs/
+*.log
+
+# Кэшеры npm
+npm-debug.log*
+
+# Исключение .git и файлов системы контроля версий
+.git
+.gitignore
+
+# Исключение IDE/редакторов
+.vscode/
+.idea/
+*.swp
+
+# Исключение директории сборки
+dist/
+build/
+
+# Исключение файлов docker
+Dockerfile
+docker-compose.yml
