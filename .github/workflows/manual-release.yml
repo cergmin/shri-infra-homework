@@ -62,7 +62,7 @@ jobs:
         id: commits
         run: |
           PREV_TAG=$(git describe --tags --abbrev=0)
-          COMMITS=$(git log $PREV_TAG..HEAD --oneline)
+          COMMITS=$(git log $PREV_TAG --oneline)
           echo "commits=$COMMITS" >> $GITHUB_ENV
       - name: Create release issue
         env:
