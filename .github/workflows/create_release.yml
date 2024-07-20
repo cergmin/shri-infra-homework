@@ -79,9 +79,9 @@ jobs:
             version: ${{ github.run_number }}
             docker-image: cr.yandex/${{ env.REGISTRY_ID }}/app:${{ github.run_number }}
             commits:
-
-      - name: Update CHANGELOG.md
+      - name: Check out the repository
         run: pwd && ls -la
+      - name: 📝 Update CHANGELOG.md
         uses: frdrwrt/write-to-file@v1.3
         with:
           filepath: ./CHANGELOG.md
