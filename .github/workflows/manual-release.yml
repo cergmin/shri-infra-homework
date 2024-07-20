@@ -61,9 +61,10 @@ jobs:
       - name: Get commit history
         id: commits
         run: |
-          PREV_TAG=$(git describe --tags --abbrev=0)
-          COMMITS=$(git log $PREV_TAG --oneline)
-          echo "commits=$COMMITS" >> $GITHUB_ENV
+          PREV_TAG=$(git tag --sort=-creatordate | grep -v "v${{ github.run_number }}" | head -n 1)
+          echo "previous_tag=$previous_tag" >> $GITHUB_ENV
+          COMMITS=$(git log $PREV_TAG..HEAD --pretty=format:'* %s' --abbrev-commit)
+          echo "commits=$commits" >> $GITHUB_ENV
       - name: Create release issue
         env:
           GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
@@ -71,8 +72,23 @@ jobs:
           VERSION: ${{ github.run_number }}
           ACTOR: ${{ github.actor }}
           DATE: $(date -u +"%Y-%m-%dT%H:%M:%SZ")
-          COMMITS: ${{ steps.commits.outputs.commits }}
+          COMMITS: ${{ process.env.commits }}
           DOCKER_IMAGE_URL: ${{ secrets.YANDEX_REGISTRY_ID }}/app:${{ github.run_number }}
         run: |
           ISSUE_TITLE="Release $VERSION"
           ISSUE_BODY=$(cat <<EOF
+          **Release Information**
+
+          - **Date:** $DATE
+          - **Author:** $ACTOR
+          - **Version:** $VERSION
+          - **Docker Image:** $DOCKER_IMAGE_URL
+
+          **Commits since last release:**
+          $COMMITS
+          EOF
+          )
+          curl -X POST -H "Authorization: token $GITHUB_TOKEN" \
+            -d "{\"title\":
+              \"$ISSUE_TITLE\", \"body\": \"$ISSUE_BODY\"}" \
+            https://api.github.com/repos/$REPO/issues
