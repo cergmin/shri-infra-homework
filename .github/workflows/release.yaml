@@ -7,12 +7,14 @@ jobs:
 
   docker:
     needs: [test_n_lint]
+    runs-on: ubuntu-latest
     steps:
       - name: Temp
         run: echo "nothing for now"
 
   update-changelog-and-create-issue:
     needs: [test_n_lint]
+    runs-on: ubuntu-latest
     steps:
       - name: Temp
         run: echo "nothing for now"
