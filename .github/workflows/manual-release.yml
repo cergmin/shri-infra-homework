@@ -31,7 +31,7 @@ jobs:
           git push origin releases/${{ github.run_number }}
   create-and-push-docker-image:
     runs-on: ubuntu-latest
-    needs: [ lint, unit-tests, create-release-branch ]
+    needs: [ create-release-branch ]
     steps:
       - uses: actions/checkout@v3
       - name: Docker auth
@@ -54,3 +54,26 @@ jobs:
           git fetch origin main:main
           git tag v${{ github.run_number }} main
           git push origin v${{ github.run_number }}
+  create-release-issue:
+    runs-on: ubuntu-latest
+    needs: [ create-tag ]
+    steps:
+      - uses: actions/checkout@v3
+      - name: Get commit history
+        id: commits
+        run: |
+          PREV_TAG=$(git describe --tags $(git rev-list --tags --max-count=1))
+          COMMITS=$(git log $PREV_TAG..HEAD --oneline)
+          echo "::set-output name=commits::$COMMITS"
+      - name: Create release issue
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+          VERSION: ${{ github.run_number }}
+          ACTOR: ${{ github.actor }}
+          DATE: $(date -u +"%Y-%m-%dT%H:%M:%SZ")
+          COMMITS: ${{ steps.commits.outputs.commits }}
+          DOCKER_IMAGE_URL: ${{ secrets.YANDEX_REGISTRY_ID }}/app:${{ github.run_number }}
+        run: |
+          ISSUE_TITLE="Release $VERSION"
+          ISSUE_BODY=$(cat <<EOF
