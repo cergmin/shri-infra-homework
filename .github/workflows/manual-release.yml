@@ -29,3 +29,18 @@ jobs:
         run: |
           git checkout -b releases/${{ github.run_number }}
           git push origin releases/${{ github.run_number }}
+  create-docker-image:
+    runs-on: ubuntu-latest
+    needs: [ lint, unit-tests, create-release-branch ]
+    steps:
+      - uses: actions/checkout@v3
+      - name: Docker auth
+        run: docker login --username oauth --password ${{ secrets.YANDEX_ACCESS_TOKEN }} cr.yandex
+      - name: Docker create images
+        run: |
+          docker build -t ${{ secrets.YANDEX_REGISTRY_ID }}/app:${{ github.run_number }} .
+          docker build -t ${{ secrets.YANDEX_REGISTRY_ID }}/app:${{ github.run_number }}_latest .
+      - name: Docker push images
+        run: |
+          docker push ${{ secrets.YANDEX_REGISTRY_ID }}/app:${{ github.run_number }}
+          docker push ${{ secrets.YANDEX_REGISTRY_ID }}/app:${{ github.run_number }}_latest
