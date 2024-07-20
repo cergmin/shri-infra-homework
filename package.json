@@ -2,6 +2,9 @@
   "name": "infra-hw",
   "version": "1.0.0",
   "scripts": {
+    "dev:docker:stop": "docker stop shrinfra && docker rm shrinfra",
+    "build:docker": "docker build -t shri-infra .",
+    "start:docker": "docker run -d -p 3000:3000 --name shrinfra shri-infra",
     "start": "nodemon ./src/server/index.ts",
     "build": "webpack --mode=production --node-env=production",
     "watch": "webpack --watch",

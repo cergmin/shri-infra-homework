@@ -1,0 +1,86 @@
+name: release.yaml
+on: [workflow_dispatch]
+
+jobs:
+  test_n_lint:
+    uses: ./.github/workflows/test_and_lint.yaml
+
+  docker:
+    needs: [test_n_lint]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Temp
+        run: echo "nothing for now"
+
+  update-changelog-and-create-issue:
+    needs: [test_n_lint]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Temp
+        run: echo "nothing for now"
+
+  create_branch_n_tag:
+    needs: [test_n_lint]
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Get run number
+        id: vars
+        run: echo "VERSION=${{ github.event.inputs.run_number }}" >> $GITHUB_ENV
+
+      - name: Setup GH user
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Create and push release branch
+        env:
+          RUN_NUMBER: ${{ env.VERSION }}
+
+        run: |
+          COMMIT_SHA=$(git rev-parse HEAD)
+          git checkout main
+          git pull origin main
+          git checkout -b release-$RUN_NUMBER
+          git tag $RUN_NUMBER $COMMIT_SHA
+          git push origin release-$RUN_NUMBER
+
+  create-release-issue:
+    needs: [test_n_lint]
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Get previous tag
+        id: prev-tag
+        run: |
+          previous_tag=$(git describe --tags --abbrev=0 HEAD^)
+          echo "::set-output name=tag::$previous_tag"
+
+      - name: Get list of commits since previous tag
+        id: commits
+        run: |
+          commits=$(git log ${{ steps.prev-tag.outputs.tag }}..HEAD --oneline)
+          echo "::set-output name=commits::$commits"
+
+      - name: Create issue content
+        run: |
+          echo "## Release Details" > issue-content.md
+          echo "- Docker Image: `for now nothing here`" >> issue-content.md
+          echo "- Date: $(date)" >> issue-content.md
+          echo "- Author: ${{ github.actor }}" >> issue-content.md
+          echo "- Version: ${{ github.run_number }}" >> issue-content.md
+          echo "- Commits since last tag (${{ steps.prev-tag.outputs.tag }}):" >> issue-content.md
+          echo "${{ steps.commits.outputs.commits }}" >> issue-content.md
+
+      - name: Create release issue
+        uses: peter-evans/create-issue-from-file@v4
+        with:
+          title: "Release ${{ github.run_number }}"
+          content-filepath: issue-content.md
+          labels: release
