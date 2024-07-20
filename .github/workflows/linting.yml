@@ -1,4 +1,4 @@
-name: Testing
+name: Linter checks
 
 on:
   pull_request:
@@ -7,7 +7,7 @@ on:
       - main
 
 jobs:
-  tests:
+  linters:
     runs-on: ubuntu-latest
 
     steps:
@@ -22,5 +22,5 @@ jobs:
       - name: Install deps
         run: npm ci
 
-      - name: Testing
-        run: npm run test
+      - name: Linting
+        run: npm run lint
