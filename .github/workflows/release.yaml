@@ -1,0 +1,39 @@
+name: release.yaml
+on: [workflow_dispatch]
+
+jobs:
+  test_n_lint:
+    uses: ./.github/workflows/test_and_lint.yaml
+
+  create_branch_n_tag:
+    needs: [test_n_lint]
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Get run number
+        id: vars
+        run: echo "VERSION=${{ github.event.inputs.run_number }}" >> $GITHUB_ENV
+
+      - name: Setup GH user
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Create and push release branch
+        env:
+          RUN_NUMBER: ${{ env.VERSION }}
+
+        run: |
+          COMMIT_SHA=$(git rev-parse HEAD)
+          git checkout main
+          git pull origin main
+          git checkout -b release-$RUN_NUMBER
+          git tag $RUN_NUMBER $COMMIT_SHA
+          git push origin release-$RUN_NUMBER
+
+  docker:
+    - name: Build Image
+
