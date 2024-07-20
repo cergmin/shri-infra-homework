@@ -73,8 +73,8 @@ jobs:
     needs: add-release-branch
 
     env:
-      PORT: 3000
-      IMAGE_NAME: test
+      PORT: ${{ vars.PORT }}
+      IMAGE_NAME: ${{ vars.IMAGE_NAME }}
 
     steps:
       - name: Checkout repository
