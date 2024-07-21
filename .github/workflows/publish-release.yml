@@ -10,8 +10,19 @@ jobs:
   publish-docker:
     runs-on: ubuntu-latest
     steps:
-      - name: Connect to machine
-        run: |
-          ssh admin@51.250.38.245 
-          docker pull cr.yandex/${{ secrets.YANDEX_REGISTRY_ID }}/app:${{ github.event.inputs.release_version }}
-          docker run cr.yandex/${{ secrets.YANDEX_REGISTRY_ID }}/app:${{ github.event.inputs.release_version }}
+      - name: Deploy to prod
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: 51.250.38.245
+          username: admin
+          key: ${{ secrets.SSH_KEY }}
+          script: |
+            sudo groupadd docker
+            sudo usermod -aG docker admin
+            docker login --username oauth --password ${{ secrets.YANDEX_ACCESS_TOKEN }} cr.yandex
+            docker kill $(docker ps -q)
+            docker rm &(docker ps -a -q)
+            docker image prune -f
+            
+            docker pull ${{ secrets.YANDEX_REGISTRY_ID }}/app:${{ github.event.inputs.release_version }}_latest
+            docker run -d --restart unless-stopped -p 3000:3000 ${{ secrets.YANDEX_REGISTRY_ID }}/app:${{ github.event.inputs.release_version }}_latest
