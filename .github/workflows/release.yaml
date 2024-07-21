@@ -122,6 +122,8 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          ref: "release-${{env.VERSION}}"
 
       - name: Setup GH user
         run: |
@@ -130,11 +132,6 @@ jobs:
 
       - name: Create and push release branch
         run: |
-          git checkout main
-          git pull origin main
-          git fetch origin main
-          git fetch origin release-${{env.VERSION}}
-          
           git tag ${{env.VERSION}}
           git push origin ${{env.VERSION}}
           
