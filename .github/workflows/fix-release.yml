@@ -1,0 +1,116 @@
+name: fix release
+
+on:
+  workflow_dispatch:
+    inputs:
+      release_version:
+        description: 'version of the release'
+        required: true
+      issue_number:
+        description: 'issue number id'
+        required: true
+        type: number
+
+jobs:
+  lint:
+    name: run lint
+    runs-on: ubuntu-latest
+    steps:
+      - name: checkout code
+        uses: actions/checkout@v3
+
+      - name: set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '20'
+
+      - name: install dependencies
+        run: npm ci
+
+      - name: run lint
+        run: npm run lint
+
+  test:
+    name: run tests
+    runs-on: ubuntu-latest
+    needs: lint
+    steps:
+      - name: checkout code
+        uses: actions/checkout@v3
+
+      - name: set up node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '20'
+
+      - name: install dependencies
+        run: npm ci
+
+      - name: run tests
+        run: npm run test
+
+  fix-release:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: checkout repository
+        uses: actions/checkout@v3
+
+      - name: get current date
+        run: echo "DATE=$(date +'%Y-%m-%dT%H:%M:%S')" >> $GITHUB_ENV
+
+      - name: get previous fix release tag
+        run: |
+          PREV_TAG=$(git describe --tags `git rev-list --tags --max-count=1`)
+          echo "PREV_TAG=$PREV_TAG" >> $GITHUB_ENV
+
+      - name: create fix release branch
+        run: |
+          git checkout -b fix/${{ github.event.inputs.release_version }}
+
+      - name: get commits since last tag
+        run: |
+          commits=$(git log ${{ env.PREV_TAG }}..HEAD --pretty=format:'%h - %s (%an)')
+          echo "COMMITS=$commits" >> $GITHUB_ENV
+
+      - name: get fix number
+        run: |
+          prev_fix_number=$(git tag | grep -E "^${{ github.event.inputs.release_version }}_fix[0-9]+$" | sed -E "s/^${{ github.event.inputs.release_version }}_fix([0-9]+)$/\1/" | sort -n | tail -1)
+          if [ -z "$prev_fix_number" ]; then
+            echo "FIX_NUMBER=1" >> $GITHUB_ENV
+          else
+            new_fix_number=$((prev_fix_number + 1))
+            echo "FIX_NUMBER=$new_fix_number" >> $GITHUB_ENV
+          fi
+
+      - name: build Docker image
+        run: |
+          docker build -t cr.yandex/${{ secrets.YANDEX_REGISTRY_ID }}/app:${{ github.event.inputs.release_version }}_fix${{ env.FIX_NUMBER }} .
+          docker tag cr.yandex/${{ secrets.YANDEX_REGISTRY_ID }}/app:${{ github.event.inputs.release_version }}_fix${{ env.FIX_NUMBER }} cr.yandex/${{ secrets.YANDEX_REGISTRY_ID }}/app:${{ github.event.inputs.release_version }}_latest
+
+      - name: push docker image
+        run: |
+          echo ${{ secrets.YANDEX_PASSWORD }} | docker login --username ${{ secrets.YANDEX_USERNAME }} --password-stdin cr.yandex
+          docker push cr.yandex/${{ secrets.YANDEX_REGISTRY_ID }}/app:${{ github.event.inputs.release_version }}_fix${{ env.FIX_NUMBER }}
+          docker push cr.yandex/${{ secrets.YANDEX_REGISTRY_ID }}/app:${{ github.event.inputs.release_version }}_latest
+
+      - name: create fix release tag
+        run: |
+          git tag ${{ github.event.inputs.release_version }}_fix${{ env.FIX_NUMBER }}
+          git push origin ${{ github.event.inputs.release_version }}_fix${{ env.FIX_NUMBER }}
+
+      - name: add comment to issue
+        uses: peter-evans/create-or-update-comment@v1
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          issue-number: ${{ github.event.inputs.issue_number }}
+          body: |
+            ## Fix Release ${{ github.event.inputs.release_version }}_fix${{ env.FIX_NUMBER }}
+
+            - Дата фикса: ${{ env.DATE }}
+            - Автор фикса: ${{ github.actor }}
+            - Версия релиза: ${{ github.event.inputs.release_version }}
+            - Коммиты:
+              ${{ env.COMMITS }}
+            - Ссылка на образ:
+              cr.yandex/${{ secrets.YANDEX_REGISTRY_ID }}/app:${{ github.event.inputs.release_version }}_fix${{ env.FIX_NUMBER }}

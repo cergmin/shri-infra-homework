@@ -72,6 +72,15 @@ jobs:
         git tag ${{ github.run_number }}
         git push origin ${{ github.run_number }}
 
+    - name: update CHANGELOG.md
+      run: |
+        echo "## ${{ github.run_number }} ($(date))" > CHANGELOG.md
+        git log $(git describe --tags --abbrev=0)..HEAD --pretty=format:"- %s" >> CHANGELOG.md
+        git add CHANGELOG.md
+        git commit -m "update CHANGELOG for release ${{ github.run_number }}"
+        git push origin releases/${{
+        github.run_number }}
+
     - name: get current date
       run: echo "DATE=$(date +'%Y-%m-%dT%H:%M:%S')" >> $GITHUB_ENV
 
