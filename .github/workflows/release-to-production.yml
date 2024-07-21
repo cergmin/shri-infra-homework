@@ -22,7 +22,6 @@ jobs:
 
   check-image-exists:
     runs-on: ubuntu-latest
-    needs: connect-to-vm
     steps:
       - name: Connect via ssh
         run: ssh admin@51.250.37.198
