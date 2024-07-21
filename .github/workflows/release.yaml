@@ -39,7 +39,7 @@ jobs:
           latest_tag="$(git describe --tags `git rev-list --tags --max-count=1`)"
           echo "latest_tag=$latest_tag" >> shared_env.txt
           commits="$(git log --oneline $latest_tag.. | sed ':a;N;$!ba;s/\n/\\n/g;s/"/\\"/g;s/\$/\\\$/g')"
-          echo "commits=$commits" >> shared_env.txt
+          echo "commits=\"$commits\"" >> shared_env.txt
       - name: Upload latest_tag.txt as artifact
         uses: actions/upload-artifact@v4
         with:
