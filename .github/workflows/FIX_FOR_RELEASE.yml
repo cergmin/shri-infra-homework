@@ -1,0 +1,44 @@
+name: FIX RELEASE
+
+on:
+  workflow_dispatch:
+    inputs:
+      release_version:
+        description: 'version - '
+        required: true
+
+jobs:
+  release_fix:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '20'
+
+      - name: Run release fix script
+        env:
+          GITHUB_RUN_NUMBER: ${{ github.run_number }}
+          REGISTRY_ID: ${{ secrets.REGISTRY_ID }}
+          OAUTH_TOKEN: ${{ secrets.OAUTH_TOKEN }}
+          REGISTRY_USERNAME: ${{ secrets.REGISTRY_USERNAME }}
+          RELEASE_VERSION: ${{ github.event.inputs.release_version }}
+        run: node scripts/release-fix.js
+
+      - name: Generate release notes
+        id: release_notes
+        run: node scripts/generate-release-notes.js
+
+      - name: Create GitHub Issue
+        env:
+          GITHUB_RUN_NUMBER: ${{ github.run_number }}
+          GITHUB_ACTOR: ${{ github.actor }}
+          REGISTRY_ID: ${{ secrets.REGISTRY_ID }}
+          GITHUB_TOKEN: ${{ secrets.GIT_TOKEN }}
+          RELEASE_VERSION: ${{ github.event.inputs.release_version }}
+          COMMITS: ${{ steps.release_notes.outputs.commits }}
+        run: node scripts/create-github-issue.js

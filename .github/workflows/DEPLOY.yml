@@ -1,0 +1,56 @@
+name: DEPLOY
+
+on:
+  workflow_dispatch:
+    inputs:
+      release_version:
+        description: 'version - '
+        required: true
+
+jobs:
+  check_image:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check Docker Image
+        run: |
+          echo ${{ secrets.OAUTH_TOKEN }} | docker login --username oauth --password-stdin cr.yandex
+          if ! docker pull cr.yandex/${{ secrets.REGISTRY_ID }}/app:${{ github.event.inputs.release_version }}_latest; then
+            echo "Docker image cr.yandex/${{ secrets.REGISTRY_ID }}/app:${{ github.event.inputs.release_version }}_latest does not exist"
+            exit 1
+          fi
+
+  deploy:
+    needs: check_image
+    runs-on: ubuntu-latest
+
+    steps:
+      #   TO-DO: - name: Deploy to Production - надо разобраться с DataSphere, пока так
+      - name: Create Docker image
+        run: |
+          docker build -t cr.yandex/${{ secrets.REGISTRY_ID }}/app:${{ github.run_number }} .
+          docker tag cr.yandex/${{ secrets.REGISTRY_ID }}/app:${{ github.run_number }} cr.yandex/${{ secrets.REGISTRY_ID }}/app:${{ github.run_number }}_latest
+
+      - name: Push Docker image
+        run: |
+          docker push cr.yandex/${{ secrets.REGISTRY_ID }}/app:${{ github.run_number }}
+          docker push cr.yandex/${{ secrets.REGISTRY_ID }}/app:${{ github.run_number }}_latest
+
+      - name: Add comment to issue
+        uses: actions/github-script@v6
+        with:
+          github-token: ${{ secrets.GIT_TOKEN }}
+          script: |
+            const { github, context } = require('@actions/github');  
+            const issue_number = context.issue.number;
+            github.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: issue_number,
+              body: `
+                **Date:** ${new Date().toISOString().split('T')[0]}
+                **Deployed by:** ${context.actor}
+                **Release Version:** ${{ github.event.inputs.release_version }}
+                **Docker Image:** cr.yandex/${{ secrets.REGISTRY_ID }}/app:${{ github.event.inputs.release_version }}_latest
+              `
+            });
