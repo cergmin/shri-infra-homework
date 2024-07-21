@@ -33,19 +33,22 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Fetch tags
-        run: git fetch --tags
+        run: |
+          git pull
+          git fetch --tags
 
       - name: Write latest tag to file
         run: |
           latest_tag="$(git describe --tags `git rev-list --tags --max-count=1`)"
+          echo $latest_tag
           echo "latest_tag=$latest_tag" >> shared_env.txt
 
       - name: Write commits to file
         run: |
-          echo "commits=$(git log $latest_tag..HEAD --oneline)" >> shared_env.txt
-
-      - name: Show intermediate (shared_env.txt)
-        run: cat shared_env.txt
+          echo "$(git log --oneline -n 3)"
+          commits="$(git log $latest_tag..HEAD --oneline)"
+          echo $commits
+          echo "commits=\"$(echo "$commits" | sed 's/"/\\"/g')\"" > shared_env.txt
 
       - name: Upload latest_tag.txt as artifact
         uses: actions/upload-artifact@v4
@@ -58,7 +61,7 @@ jobs:
     needs: [ set_latestTag_n_commitList ]
     steps:
       - name: Download variables artifact
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: shared_env
 
