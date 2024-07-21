@@ -28,23 +28,34 @@ jobs:
     needs: [ test_n_lint ]
     runs-on: ubuntu-latest
 
+    outputs:
+      PREVIOUS_TAG: ${{ steps.get_prev_tag.outputs.previous_tag }}
+      COMMITS: ${{ steps.get_commits.outputs.commits }}
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
       - name: Get previous tag
+        id: get_prev_tag
         run: |
           previous_tag=$(git describe --tags --abbrev=0 HEAD --always)
-          echo "PREVIOUS_TAG=$previous_tag" >> $GITHUB_ENV
+          echo "::set-output name=previous_tag::$previous_tag"
 
       - name: Get list of commits since previous tag
+        id: get_commits
         run: |
           commits=$(git log $PREVIOUS_TAG..HEAD --oneline)
-          echo "COMMITS=$commits" >> $GITHUB_ENV
+          echo "::set-output name=commits::$commits"
 
   update_changelog:
     needs: [set_latestTag_n_commitList]
     runs-on: ubuntu-latest
+
+    env:
+      PREVIOUS_TAG: ${{ needs.set_latestTag_n_commitList.outputs.PREVIOUS_TAG }}
+      COMMITS: ${{ needs.set_latestTag_n_commitList.outputs.COMMITS }}
+
     steps:
       - name: Temp
         run: echo "$PREVIOUS_TAG\n\n$COMMITS"
@@ -80,6 +91,9 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Create issue content
+        env:
+          PREVIOUS_TAG: ${{ needs.set_latestTag_n_commitList.outputs.PREVIOUS_TAG }}
+          COMMITS: ${{ needs.set_latestTag_n_commitList.outputs.COMMITS }}
         run: |
           echo "## Release Details" > issue-content.md
           echo "- Docker Image: \`for now nothing here\`" >> issue-content.md
