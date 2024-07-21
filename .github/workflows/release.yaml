@@ -38,9 +38,8 @@ jobs:
         run: |
           latest_tag="$(git describe --tags `git rev-list --tags --max-count=1`)"
           echo "latest_tag=$latest_tag" >> shared_env.txt
-          commits="$(git log --oneline $latest_tag..)"
-          echo "commits=\"$(echo "$commits" | sed ':a;N;$!ba;s/\n/\\n/g;s/"/\\"/g;s/\$/\\\$/g')\"" >> shared_env.txt
-          cat shared_env.txt
+          commits="$(git log --oneline $latest_tag.. | sed ':a;N;$!ba;s/\n/\\n/g;s/"/\\"/g;s/\$/\\\$/g')"
+          echo "commits=$commits" >> shared_env.txt
       - name: Upload latest_tag.txt as artifact
         uses: actions/upload-artifact@v4
         with:
@@ -65,21 +64,21 @@ jobs:
 
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Update file locally
         run: |
           echo "## Release ${{env.VERSION}}" >> TEMP_CHANGELOG.md
-          echo $commits >> TEMP_CHANGELOG.md
+          echo "$(echo -e $commits | sed ':a;N;$!ba;s/\n/<br> - /g')" >> TEMP_CHANGELOG.md
           echo "" >> TEMP_CHANGELOG.md
+          diff TEMP_CHANGELOG.md CHANGELOG.md
           mv TEMP_CHANGELOG.md CHANGELOG.md
-
-      - name: Configure git
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
 
       - name: Create commit
         run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
           git checkout -b release-${{env.VERSION}}
           git add CHANGELOG.md
           git commit -m "[BOT] Added release notes for version ${{env.VERSION}}"
@@ -161,7 +160,7 @@ jobs:
           echo "- Author: ${{ github.actor }}" >> issue-content.md
           echo "- Version: ${{env.VERSION}}" >> issue-content.md
           echo "- Commits since last tag ($latest_tag):" >> issue-content.md
-          echo $commits >> issue-content.md
+          echo -e $commits >> issue-content.md
 
       - name: Create release issue
         uses: peter-evans/create-issue-from-file@v4
