@@ -94,16 +94,7 @@ jobs:
         run: echo "CURRENT_DATE=$(date +'%Y-%m-%d')" >> $GITHUB_ENV
 
       - name: Get previous release tag
-        run: echo "::set-output name=prev-tag::$(git rev-list --tags --max-count=1 HEAD^ || echo 'No previous tag')"
-        
-      - name: Get commits
-        run: |
-          if [ "${{ steps.get-previous-tag.outputs.prev-tag }}" != "No previous tag" ]; then
-            COMMITS=$(git log --pretty=format:"%h - %s" ${{ steps.get-previous-tag.outputs.prev-tag }}..HEAD)
-          else
-            COMMITS=$(git log --pretty=format:"%h - %s" HEAD)
-          fi
-          echo "::set-output name=log_changes::$COMMITS"
+        run: echo "::set-output name=log_changes::$(git log $PREVIOUS_TAG..HEAD --oneline)"
           
       - name: Create issue for release
         run: |
@@ -131,6 +122,10 @@ jobs:
           echo "${{ steps.get-commits.outputs.log_changes }}" >> CHANGELOG.md
           git add CHANGELOG.md
           git commit -m "Update CHANGELOG for release ${{ github.run_number }}"
+          ssh-agent bash << EOF
+          ssh-add ~/.ssh/id_rsa
           git push origin main
+          EOF
         env:
+          DEPLOY_KEY: ${{ secrets.DEPLOY_KEY }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
