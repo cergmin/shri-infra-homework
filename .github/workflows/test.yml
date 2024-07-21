@@ -15,30 +15,29 @@ jobs:
     steps:
       - uses: actions/checkout@v2
 
-      - uses: actions/setup-node@v2
-        with:
-          node-version: '20.14.0'
-
-      - name: Set release date
-        run: echo "CURRENT_DATE=$(date +'%Y-%m-%d')" >> $GITHUB_ENV
-        
-      - name: Get commits
+      - name: Update CHANGELOG.md
         run: |
-          echo "::set-output name=log_changes::$(git log --pretty=format:"- %s (%h)" $(git describe --tags --abbrev=0)..HEAD)"
-
-      - name: test issue
-        run: echo gh issue list --search "Release ${{ github.event.inputs.release_version }}" --json number --jq '.[0].number'
+          git checkout main
+          > CHANGELOG.md
+          echo "# Версия ${{ github.run_number }}" | cat - CHANGELOG.md > temp && mv temp CHANGELOG.md
+          echo "" >> CHANGELOG.md
+          echo "Список коммитов от предыдущего релизного (или фиксрелизного) тега:" >> CHANGELOG.md
+          echo "${{ steps.get-commits.outputs.log_changes }}" >> CHANGELOG.md
+          git add CHANGELOG.md
+          git commit -m "Update CHANGELOG for release ${{ github.run_number }}"
+          # Install ssh-agent and add private key
+          echo "$DEPLOY_KEY_PRIVATE" | base64 -d > id_rsa
+          chmod 600 id_rsa
+          eval $(ssh-agent -s)
+          ssh-add id_rsa
+          # Set up ssh config to use the deploy key
+          echo "Host github.com" >> ~/.ssh/config
+          echo "  IdentityFile ~/.ssh/id_rsa" >> ~/.ssh/config
+          echo "  IdentitiesOnly yes" >> ~/.ssh/config
+          echo "  StrictHostKeyChecking no" >> ~/.ssh/config
+          git push -f "git@github.com:${{ github.repository }}.git" main:main
+          rm id_rsa
+          ssh-agent -k
         env:
-          GITHUB_TOKEN: ${{ github.token }}
-          
-      - name: Create issue for release
-        run: |
-          gh issue comment $(gh issue list --search "Release ${{ github.event.inputs.release_version }}" --json number --jq '.[0].number') \
-            --body "$BODY" \
-        env:
-          GITHUB_TOKEN: ${{ github.token }}
-          BODY: |
-            Дата: ${{ env.CURRENT_DATE }}
-            Автор фикса: ${{ github.actor }}
-            Список коммитов от предыдущего релизного (или фиксрелизного) тега: ${{ steps.get-log.outputs.log_changes }}
-            Docker образ: ${{ secrets.REGISTRY_ID }}/app:${{ github.run_number }}_latest 
+          DEPLOY_KEY_PRIVATE: ${{ secrets.DEPLOY_KEY }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
