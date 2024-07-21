@@ -43,7 +43,7 @@ jobs:
       - name: Write commits to file
         run: |
           echo "$(git log --oneline -n 3)"
-          commits="$(git log $latest_tag.. --oneline)"
+          commits="$(git log --oneline $latest_tag..)"
           echo $commits
           echo "commits=\"$(echo "$commits" | sed 's/"/\\"/g')\"" >> shared_env.txt
 
