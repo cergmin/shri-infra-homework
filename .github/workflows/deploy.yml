@@ -51,11 +51,11 @@ jobs:
           username: ${{ secrets.DEPLOY_USER }}
           key: ${{ secrets.DEPLOY_KEY }}
           script: |
-            echo ${{ secrets.YCR_OAUTH_TOKEN }} | docker login --username oauth --password-stdin cr.yandex
-            docker pull cr.yandex/${{ secrets.YCR_ID }}/app:${{ github.event.inputs.release_id }}
-            docker stop shri-infra
-            docker system prune -f
-            docker run --name shri-infra -dit -p 3000:3000 cr.yandex/${{ secrets.YCR_ID }}/app:${{ github.event.inputs.release_id }}
+            echo ${{ secrets.YCR_OAUTH_TOKEN }} | sudo docker login --username oauth --password-stdin cr.yandex
+            sudo docker pull cr.yandex/${{ secrets.YCR_ID }}/app:${{ github.event.inputs.release_id }}
+            sudo docker stop shri-infra
+            sudo docker system prune -f
+            sudo docker run --name shri-infra -dit -p 3000:3000 cr.yandex/${{ secrets.YCR_ID }}/app:${{ github.event.inputs.release_id }}
 
         
         
