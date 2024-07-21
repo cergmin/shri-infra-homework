@@ -33,7 +33,7 @@ jobs:
           passphrase: ${{ secrets.PRODUCTION_SERVER_SSH_KEY_PASSPHRASE }}
           script: |
             echo "Logging in to Yandex Container Registry"
-            echo "${{ secrets.YANDEX_CONTAINER_REGISTRY_TOKEN }}" | docker login --username oauth --password-stdin cr.yandex
+            echo "${{ secrets.YANDEX_OAUTH_TOKEN }}" | docker login --username oauth --password-stdin cr.yandex
             echo "Pulling the latest Docker image"
             docker pull cr.yandex/crpkbossnpt5f3uj93p2/app:${{ github.event.inputs.release_version }}_latest
             echo "Stopping and removing old container"

@@ -1,0 +1,70 @@
+name: Fix Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      release_version:
+        required: true
+        description: 'Release version (e.g., 1.2.3)'
+
+permissions:
+  contents: write
+  issues: write
+
+jobs:
+  lint_and_tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Node.js
+        uses: actions/setup-node@v2
+        with:
+          node-version: '20.14.0'
+      - run: npm install
+      - run: npm run lint
+      - run: npm test
+
+  build_and_push_fix:
+    runs-on: ubuntu-latest
+    needs: lint_and_tests
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Node.js
+        uses: actions/setup-node@v2
+        with:
+          node-version: '20.14.0'
+      - run: npm install
+      - run: npm run build
+      - name: Build Docker Image
+        run: docker build . -t shri-infra:latest
+      - name: Log in to Yandex Container Registry
+        run: echo "${{ secrets.YANDEX_OAUTH_TOKEN }}" | docker login --username oauth --password-stdin cr.yandex
+      - name: Tag and Push Docker Images to Yandex Container Registry
+        run: |
+          docker tag shri-infra:latest cr.yandex/crpkbossnpt5f3uj93p2/app:${{ github.event.inputs.release_version }}_fix${{ github.run_number }}
+          docker tag shri-infra:latest cr.yandex/crpkbossnpt5f3uj93p2/app:${{ github.event.inputs.release_version }}_latest
+          docker push cr.yandex/crpkbossnpt5f3uj93p2/app:${{ github.event.inputs.release_version }}_fix${{ github.run_number }}
+          docker push cr.yandex/crpkbossnpt5f3uj93p2/app:${{ github.event.inputs.release_version }}_latest
+      - name: Set up Git user
+        run: |
+          git config --global user.email "elizaosipovaa@yandex.ru"
+          git config --global user.name "Eliza"
+      - name: Create Fix Tag
+        run: |
+          git tag -a v${{ github.event.inputs.release_version }}_fix${{ github.run_number }} -m "Fix Release ${{ github.event.inputs.release_version }}_fix${{ github.run_number }}"
+          git push origin --tags
+      - name: Set Date
+        run: echo "CURRENT_DATE=$(date +'%Y-%m-%d')" >> $GITHUB_ENV
+      - name: Create Release Issue
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          commit_list=$(git log --oneline v${{ github.event.inputs.release_version }}..HEAD)
+          gh issue create \
+            --title "Release v${{ github.event.inputs.release_version }}_fix${{ github.run_number }}" \
+            --body "$(echo -e "Date: $(date -u +"%Y-%m-%dT%H:%M:%SZ")<br> \
+              Дата: ${{ env.CURRENT_DATE }}
+              Автор: ${{ github.actor }}<br> \
+              Версия: ${{ github.run_number }}<br> \
+              Список коммитов: <br>$commit_list<br> \
+              Docker образ: [Ссылка](http://cr.yandex/crpkbossnpt5f3uj93p2/app:${{ github.event.inputs.release_version }}_fix${{ github.run_number }})")"
