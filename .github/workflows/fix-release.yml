@@ -64,12 +64,12 @@ jobs:
       - name: сheckout release branch
         run: git checkout releases/${{ github.event.inputs.release_version }}
 
-      - name: List all tags
+      - name: List all commits
         run: git tag -l
 
       - name: get commits since last tag
         run: |
-          latest_tag=$(git describe --tags $(git rev-list --tags --max-count=1))
+          latest_tag=$(git tag -l | grep -E '^${{ github.event.inputs.release_version }}_fix[0-9]+$' | sort -t'_' -k3,3n | tail -n 1)
           echo "Latest tag: $latest_tag"
           if [ -z "$latest_tag" ]; then
             echo "No tags found."
