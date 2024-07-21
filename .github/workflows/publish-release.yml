@@ -17,7 +17,6 @@ jobs:
           username: admin
           key: ${{ secrets.SSH_KEY }}
           script: |
-            sudo groupadd docker
             sudo usermod -aG docker admin
             docker login --username oauth --password ${{ secrets.YANDEX_ACCESS_TOKEN }} cr.yandex
             docker kill $(docker ps -q)
