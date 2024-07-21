@@ -1,0 +1,61 @@
+name: Deploy to Production
+
+on:
+  workflow_dispatch:
+    inputs:
+      release_version:
+        description: 'Version of the release to deploy'
+        required: true
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Login to Yandex Container Registry
+        run: echo "${{ secrets.YANDEX_OAUTH_TOKEN }}" | docker login --username oauth --password-stdin cr.yandex
+
+      - name: Check if image exists in Yandex Container Registry
+        run: |
+          if ! docker manifest inspect cr.yandex/crpkbossnpt5f3uj93p2/app:${{ github.event.inputs.release_version }}_latest; then
+            echo "Image not found!" && exit 1
+          fi
+
+      - name: SSH and deploy to production server
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.PRODUCTION_SERVER_HOST }}
+          username: ${{ secrets.PRODUCTION_SERVER_USER }}
+          key: ${{ secrets.PRODUCTION_SERVER_SSH_KEY }}
+          passphrase: ${{ secrets.PRODUCTION_SERVER_SSH_KEY_PASSPHRASE }}
+          script: |
+            echo "Logging in to Yandex Container Registry"
+            echo "${{ secrets.YANDEX_CONTAINER_REGISTRY_TOKEN }}" | docker login --username oauth --password-stdin cr.yandex
+            echo "Pulling the latest Docker image"
+            docker pull cr.yandex/crpkbossnpt5f3uj93p2/app:${{ github.event.inputs.release_version }}_latest
+            echo "Stopping and removing old container"
+            docker stop prod  true
+            docker rm prod  true
+            echo "Running the new Docker image"
+            docker run -d --name prod -p 3000:3000 cr.yandex/crpkbossnpt5f3uj93p2/app:${{ github.event.inputs.release_version }}_latest
+
+      - name: Get Current Date
+        run: echo "CURRENT_DATE=$(date +'%Y-%m-%d')" >> $GITHUB_ENV
+
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Update Issue with deployment information
+        run: |
+          issue_number=$(gh issue list --label release-${{ github.event.inputs.release_version }} --json number --jq '.[0].number')
+          gh issue comment "$issue_number" --body "$BODY"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          BODY: |
+            ### Release ${{ github.event.inputs.release_version }} deployed to production.
+            Дата: ${{ env.CURRENT_DATE }}
+            Автор: ${{ github.actor }}
+            Docker образ: [Ссылка](http://cr.yandex/crpkbossnpt5f3uj93p2/app:${{ github.event.inputs.release_version }}_latest)
