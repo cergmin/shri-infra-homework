@@ -74,9 +74,6 @@ jobs:
           commits="${commits//$'\r'/'%0D'}"
           echo "COMMITS=$commits" >> $GITHUB_ENV
 
-      - name: log in to yandex container registry
-        run: echo ${{ secrets.YANDEX_REGISTRY_TOKEN }} | docker login --username oauth --password-stdin cr.yandex
-
       - name: build docker image
         run: |
           docker build -t cr.yandex/${{ secrets.YANDEX_REGISTRY_ID }}/app:${{ github.event.inputs.release_version }}_fix${{ github.run_number }} .
