@@ -28,6 +28,6 @@ jobs:
           git add CHANGELOG.md
           git commit -m "Update CHANGELOG for release ${{ github.run_number }}"
           git pull origin main
-          git push https://${{ secrets.PA_TOKEN }}@github.com/${{ github.repository }}.git HEAD:releases/${{ github.run_number }}
+          git push https://${{ secrets.PA_TOKEN }}@github.com/${{ github.repository }}.git HEAD:main
         env:
           GITHUB_TOKEN: ${{ secrets.PA_TOKEN }} 
