@@ -2,31 +2,32 @@ name: test
 
 on:
   workflow_dispatch:
-    inputs:
-      release_version:
-        description: 'Release version'
-        required: true
 
 jobs:
 
-  hotfix:
+  test:
     runs-on: ubuntu-latest
 
     steps:
       - uses: actions/checkout@v2
 
       - name: Update CHANGELOG.md
+        env:
+          GITHUB_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
         run: |
-          git config --global user.email "github-actions[bot]@users.noreply.github.com"
-          git config --global user.name "github-actions[bot]"
-          git checkout main
-          > CHANGELOG.md
           echo "# Версия ${{ github.run_number }}" | cat - CHANGELOG.md > temp && mv temp CHANGELOG.md
           echo "" >> CHANGELOG.md
           echo "Список коммитов от предыдущего релизного (или фиксрелизного) тега:" >> CHANGELOG.md
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git config --global user.name "github-actions[bot]"
           git add CHANGELOG.md
           git commit -m "Update CHANGELOG for release ${{ github.run_number }}"
-          git pull https://${{ secrets.PA_TOKEN }}@github.com/${{ github.repository }}.git main
-          git push https://${{ secrets.PA_TOKEN }}@github.com/${{ github.repository }}.git main
+          git push https://${{ secrets.PERSONAL_ACCESS_TOKEN }}@github.com/${{ github.repository }}.git HEAD:releases/${{ github.run_number }}
+          
+      - name: Create and merge PR
         env:
-          GITHUB_TOKEN: ${{ secrets.PA_TOKEN }} 
+          GITHUB_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
+        run: |
+          gh pr create --title "Release ${{ github.run_number }}" --body "Automatic release PR for version ${{ github.run_number }}" --head releases/${{ github.run_number }} --base main
+          PR_NUMBER=$(gh pr list --head releases/${{ github.run_number }} --json number --jq '.[0].number')
+          gh pr merge $PR_NUMBER --admin --merge
