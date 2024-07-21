@@ -63,4 +63,35 @@ jobs:
         uses: EndBug/latest-tag@latest
         with: 
           ref: ${{ github.run_number }}
-
+  create-issue:
+    runs-on: ubuntu-latest
+    needs: [lint-and-test]
+    steps:
+      - name: Checkout release branch
+        uses: actions/checkout@v4
+        with:
+          ref: release/${{ github.run_number }}
+      - name: Configure git
+        run: |
+          git config --global user.email "${{ github.actor }}@users.noreply.github.com"
+          git config --global user.name "${{ github.actor }}"
+      - name: Create label
+        run: |
+          gh label create "release ${{ github.run_number }}"
+        env:
+          GH_TOKEN: ${{ github.token }}
+      - name: Create issue
+        run: |
+          touch $ISSUE
+          echo "**Release ${{ github.run_number }}**" >> $ISSUE
+          echo "- Date: $(date)" >> $ISSUE
+          echo "- Author: ${{ github.triggering_actor }}" >> $ISSUE
+          echo "- Version: ${{ github.run_number }}" >> $ISSUE
+          echo "- Commits: ${{ github.event.head_commit.message }}" >> $ISSUE
+          git log --pretty=oneline >> $ISSUE
+          echo "- YC Docker: cr.yandex/${{secrets.CR_ID}}/app:${{ github.run_number }}" >> $ISSUE
+          gh issue create --title "Release ${{ github.run_number }}" --body-file $ISSUE --label "release ${{ github.run_number }}"
+          rm $ISSUE
+        env:
+          ISSUE: issue.txt
+          GH_TOKEN: ${{ github.token }}
