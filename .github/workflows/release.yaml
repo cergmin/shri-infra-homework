@@ -69,14 +69,38 @@ jobs:
           mv __TEMP__new_changelog.md CHANGELOG.md
 
       - name: Commit and push CHANGELOG.md
-        env:
-          GITHUB_TOKEN: ${{ secrets.GTIHUB_TOKEN }}
         run: |
           git config --global user.name 'github-actions[bot]'
           git config --global user.email 'github-actions[bot]@users.noreply.github.com'
+          git checkout -b release-$VERSION
           git add CHANGELOG.md
           git commit -m "[BOT] Update CHANGELOG.md for release $VERSION"
-          git push https://readyyyk:$GITHUB_TOKEN@github.com/${{ github.repository }}.git HEAD:main
+          git push origin release-$VERSION
+
+      - name: Create pull request
+        id: create_pr
+        uses: peter-evans/create-pull-request@v5
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          commit-message: "[BOT] Update CHANGELOG.md for release $VERSION"
+          branch: "release-$VERSION"
+          base: "main"
+          title: "[BOT] Release $VERSION"
+          body: "This PR updates the CHANGELOG.md for release $VERSION."
+
+      - name: Merge pull request
+        if: steps.create_pr.outputs.pull-request-url != ''
+        uses: actions/github-script@v6
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const prNumber = `{{ steps.create_pr.outputs.pull-request-number }}`
+            await github.pulls.merge({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: prNumber,
+              merge_method: 'squash'
+            })
 
   create_branch_n_tag:
     needs: [update_changelog]
