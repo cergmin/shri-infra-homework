@@ -43,9 +43,17 @@ jobs:
         run: |
           git tag -a v${{ github.run_number }} -m "Release #${{ github.run_number }}"
           git push origin v${{ github.run_number }}
+      - name: Get commit list
+        id: commit_list
+        run: |
+          git fetch --tags
+          git log $(git describe --tags --abbrev=0 @^)..@ --pretty=format:"%h - %s (%an)"
       - name: Create Release Issue
         uses: JasonEtco/create-an-issue@v2
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          
+          RELEASE_ID: ${{ github.run_number }}
+          COMMIT_LIST: ${{ steps.commit_list.outputs }}
+          AUTHOR: ${{ github.actor }}
+          IMAGE_ID: cr.yandex/${{ secrets.YCR_ID }}/app:${{ github.run_number }}
       
