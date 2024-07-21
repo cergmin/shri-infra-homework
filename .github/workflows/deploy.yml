@@ -49,4 +49,4 @@ jobs:
             --body "$BODY" \
         env:
           GITHUB_TOKEN: ${{ github.token }}
-          BODY: Релиз ${{ github.event.inputs.release_version }} выкачен в прод ${{ env.CURRENT_DATE }} пользователем $GITHUB_ACTOR.
+          BODY: Релиз ${{ github.event.inputs.release_version }} выкачен в прод ${{ env.CURRENT_DATE }} пользователем ${{ github.actor }}.
