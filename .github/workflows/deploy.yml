@@ -3,7 +3,7 @@ name: Deploy
 on:
   workflow_dispatch:
     inputs:
-      release_version:
+      release_id:
         description: 'Release'
         required: true
 
@@ -22,6 +22,7 @@ jobs:
           node-version: '20.14.0'
       - run: npm ci && npm run test && npm run lint
   release:
+    needs: test
     runs-on: ubuntu-latest
     steps:
       - name: Find issues
