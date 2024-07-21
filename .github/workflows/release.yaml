@@ -37,14 +37,10 @@ jobs:
       - name: Write latest tag n commits to file
         run: |
           latest_tag="$(git describe --tags `git rev-list --tags --max-count=1`)"
-          echo $latest_tag
           echo "latest_tag=$latest_tag" >> shared_env.txt
-          
-          echo "$(git log --oneline -n 3)"
           commits="$(git log --oneline $latest_tag..)"
-          echo $commits
-          echo "commits=\"$(echo "$commits" | sed 's/"/\\"/g')\"" >> shared_env.txt
-
+          echo "commits=\"$(echo "$commits" | sed ':a;N;$!ba;s/\n/\\n/g;s/"/\\"/g;s/\$/\\\$/g')\"" >> shared_env.txt
+          cat shared_env.txt
       - name: Upload latest_tag.txt as artifact
         uses: actions/upload-artifact@v4
         with:
