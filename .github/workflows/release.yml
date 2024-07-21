@@ -1,0 +1,66 @@
+name: Release
+
+on: workflow_dispatch
+
+jobs:
+  lint-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Clone repository
+        uses: actions/checkout@v4
+      - name: Use Node.js v20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+      - name: Install dependencies
+        run: npm ci
+      - name: Run lint
+        run: npm run lint
+      - name: Run tests
+        run: npm run test
+  create-branch:
+    runs-on: ubuntu-latest
+    needs: [lint-and-test]
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Create release branch
+        run: git checkout -b release/${{ github.run_number }}
+      - name: Push release branch
+        run: git push origin release/${{ github.run_number }}
+  build-and-push-docker:
+    runs-on: ubuntu-latest
+    needs: [create-branch]
+    steps:
+      - name: Checkout release branch
+        uses: actions/checkout@v4
+        with:
+          ref: release/${{ github.run_number }}
+      - name: Login to Container registry
+        run: |
+            docker login \
+              --username oauth \
+              --password ${{ secrets.YA_OAUTH }} \
+              cr.yandex
+      - name: Build and push docker image
+        run: |
+            docker build -t cr.yandex/${{ secrets.CR_ID }}/app:${{ github.run_number }} .
+            docker push cr.yandex/${{ secrets.CR_ID }}/app:${{ github.run_number }}
+      - name: Build and push latest docker image
+        run: |
+            docker build -t cr.yandex/${{ secrets.CR_ID }}/app:${{ github.run_number }}_latest .
+            docker push cr.yandex/${{ secrets.CR_ID }}/app:${{ github.run_number }}_latest
+  tag-release:
+    runs-on: ubuntu-latest
+    needs: [create-branch]
+    steps:
+      - name: Checkout release branch
+        uses: actions/checkout@v4
+        with:
+          ref: release/${{ github.run_number }}
+      - name: Create and push tag
+        uses: EndBug/latest-tag@latest
+        with: 
+          ref: ${{ github.run_number }}
+
