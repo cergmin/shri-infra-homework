@@ -72,25 +72,25 @@ jobs:
         git tag ${{ github.run_number }}
         git push origin ${{ github.run_number }}
 
-      - name: get current date
-        run: echo "DATE=$(date +'%Y-%m-%dT%H:%M:%S')" >> $GITHUB_ENV
+    - name: get current date
+      run: echo "DATE=$(date +'%Y-%m-%dT%H:%M:%S')" >> $GITHUB_ENV
 
-      - name: get commits
-        run: |
-          # Get the list of commits
-          commits=$(git log -1 --pretty=format:'%h - %s (%an)')
-          echo "COMMITS=$commits" >> $GITHUB_ENV
+    - name: get commits
+      run: |
+        # Get the list of commits
+        commits=$(git log -1 --pretty=format:'%h - %s (%an)')
+        echo "COMMITS=$commits" >> $GITHUB_ENV
 
-      - name: create gitHub issue
-        uses: dacbd/create-issue-action@main
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          title: Release ${{ github.run_number }}
-          body: |
-            ## Release ${{ github.run_number }}
+    - name: create gitHub issue
+      uses: dacbd/create-issue-action@main
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
+        title: Release ${{ github.run_number }}
+        body: |
+          ## Release ${{ github.run_number }}
 
-            - Дата: ${{ env.DATE }}
-            - Автор релиза: ${{ github.actor }}
-            - Версия: ${{ github.run_number }}
-            - Коммиты: ${{ env.COMMITS }}
-            - Ссылка на образ: cr.yandex/${{ secrets.YANDEX_REGISTRY_ID }}/app:${{ github.run_number }}
+          - Дата: ${{ env.DATE }}
+          - Автор релиза: ${{ github.actor }}
+          - Версия: ${{ github.run_number }}
+          - Коммиты: ${{ env.COMMITS }}
+          - Ссылка на образ: cr.yandex/${{ secrets.YANDEX_REGISTRY_ID }}/app:${{ github.run_number }}
