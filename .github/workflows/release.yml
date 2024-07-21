@@ -74,14 +74,14 @@ jobs:
 
     - name: create github issue
       uses: dacbd/create-issue-action@main
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          title: Release ${{ github.run_number }}
-          body: |
-            ## Release ${{ github.run_number }}
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
+        title: Release ${{ github.run_number }}
+        body: |
+          ## Release ${{ github.run_number }}
 
-            - Дата: $(date +'%Y-%m-%dT%H:%M:%S')
-            - Автор релиза: ${{ github.triggering_actor }}
-            - Версия: ${{ github.run_number }}
-            - Коммиты: ${{ env.commits }}
-            - Ссылка на образ: cr.yandex/${{ secrets.YANDEX_REGISTRY_ID }}/app:${{ github.run_number }}
+          - Дата: $(date +'%Y-%m-%dT%H:%M:%S')
+          - Автор релиза: ${{ github.triggering_actor }}
+          - Версия: ${{ github.run_number }}
+          - Коммиты: ${{ env.commits }}
+          - Ссылка на образ: cr.yandex/${{ secrets.YANDEX_REGISTRY_ID }}/app:${{ github.run_number }}
