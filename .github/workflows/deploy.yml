@@ -1,0 +1,61 @@
+name: Deploy
+
+on:
+  workflow_dispatch:
+    inputs:
+      release_version:
+        description: 'Release'
+        required: true
+
+permissions:
+  contents: write
+  issues: write
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Setup Node
+        uses: actions/setup-node@v4.0.3
+        with:
+          node-version: '20.14.0'
+      - run: npm ci && npm run test && npm run lint
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Find issues
+        uses: actions-cool/issues-helper@v3
+        id: find_issue
+        with:
+          actions: 'find-issues'
+          token: ${{ secrets.GITHUB_TOKEN }}
+          title-includes: 'Release ${{ github.event.inputs.release_id }}'
+      - name: Add comment to issue
+        uses: peter-evans/create-or-update-comment@v4
+        with: 
+          issue-number: ${{ fromJSON(steps.find_issue.outputs.issues)[0].number }}
+          body: |
+            IT WAS RELEASED TO PRODUCTION
+            By: ${{ github.actor }}
+            Release date: $(date +'%Y-%m-%d')
+      - name: Deploy to VPS
+        uses: appleboy/ssh-action@v1.0.0
+        env:
+          GITHUB_USERNAME: ${{ secrets.USERNAME }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          host: ${{ secrets.DEPLOY_HOST }}
+          port: ${{ secrets.DEPLOY_PORT }}
+          username: ${{ secrets.DEPLOY_USER }}
+          key: ${{ secrets.DEPLOY_KEY }}
+          script: |
+            docker login --username oauth --password ${{ secrets.YCR_OAUTH_TOKEN }} cr.yandex
+            docker pull cr.yandex/${{ secrets.YCR_ID }}/app:${{ github.event.inputs.release_id }}
+            docker stop shri-infra
+            docker system prune -f
+            docker run --name shri-infra -dit -p 3000:3000 cr.yandex/${{ secrets.YCR_ID }}/app:${{ github.event.inputs.release_id }}
+
+        
+        
+        
