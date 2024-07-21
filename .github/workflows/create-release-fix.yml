@@ -79,7 +79,12 @@ jobs:
         run: echo "NOW=$(date +'%Y/%m/%d %H:%M:%S')" >> $GITHUB_ENV
 
       - name: Get issue number to add comment to
-        run: echo "issue_number=$( gh issue list -l ${{ env.current_version }} --json number --jq '.[].number' )" >> $GITHUB_ENV
+        run: |
+          echo "$(gh issue list)"
+          echo "$(gh issue list -l ${{ inputs.release_version }})"
+          echo "$(gh issue list -l ${{ inputs.release_version }} --json number )"
+          echo "$(gh issue list -l ${{ inputs.release_version }} --json number --jq '.[].number')"
+          echo "issue_number=$( gh issue list -l ${{ env.current_version }} --json number --jq '.[].number' )" >> $GITHUB_ENV
 
       - name: Add comment
         run: gh issue comment "$NUMBER" --body "$BODY"
