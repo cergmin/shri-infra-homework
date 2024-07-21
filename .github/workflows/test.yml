@@ -20,6 +20,7 @@ jobs:
           git config user.email "cheperegina_as@mail.com"
           git config user.name "PurpleGhost12"
           git checkout main
+          git pull origin main
           > CHANGELOG.md
           echo "# Версия ${{ github.run_number }}" | cat - CHANGELOG.md > temp && mv temp CHANGELOG.md
           echo "" >> CHANGELOG.md
