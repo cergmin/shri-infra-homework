@@ -1,7 +1,7 @@
 name: Check
 on:
     pull_request:
-        types: [review_requested]
+        types: [opened, reopened, edited]
 jobs:
     check:
         runs-on: ubuntu-latest
