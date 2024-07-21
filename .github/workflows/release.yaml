@@ -74,7 +74,7 @@ jobs:
 
       - name: Update file locally
         run: |
-          echo "## Release $VERSION" >> TEMP_CHANGELOG.md
+          echo "## Release ${{env.VERSION}}" >> TEMP_CHANGELOG.md
           echo $commits >> TEMP_CHANGELOG.md
           echo "" >> TEMP_CHANGELOG.md
           mv TEMP_CHANGELOG.md CHANGELOG.md
@@ -86,10 +86,10 @@ jobs:
 
       - name: Create commit
         run: |
-          git checkout -b release-$VERSION
+          git checkout -b release-${{env.VERSION}}
           git add CHANGELOG.md
-          git commit -m "[BOT] Added release notes for version $VERSION"
-          git push origin release-$VERSION
+          git commit -m "[BOT] Added release notes for version ${{env.VERSION}}"
+          git push origin release-${{env.VERSION}}
 
       - name: Create temporary pull request
         id: create_pr
@@ -97,7 +97,7 @@ jobs:
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           base: "main"
-          branch: "release-$VERSION"
+          branch: "release-${{env.VERSION}}"
           title: "[BOT] Release ${{ env.VERSION }}"
           body: "This PR updates the CHANGELOG.md for release ${{ env.VERSION }}."
 
@@ -135,11 +135,11 @@ jobs:
           git checkout main
           git pull origin main
           
-          git tag $VERSION
-          git push origin $VERSION
+          git tag ${{env.VERSION}}
+          git push origin ${{env.VERSION}}
           
-          git checkout -b release-$VERSION
-          git push origin release-$VERSION
+          git checkout -b release-${{env.VERSION}}
+          git push origin release-${{env.VERSION}}
 
   create-release-issue:
     needs: [set_latestTag_n_commitList, update_changelog, docker]
@@ -167,7 +167,7 @@ jobs:
           echo "- Docker Image: \`for now nothing here\`" >> issue-content.md
           echo "- Date: $(date)" >> issue-content.md
           echo "- Author: ${{ github.actor }}" >> issue-content.md
-          echo "- Version: $VERSION" >> issue-content.md
+          echo "- Version: ${{env.VERSION}}" >> issue-content.md
           echo "- Commits since last tag ($latest_tag):" >> issue-content.md
           echo $commits >> issue-content.md
 
