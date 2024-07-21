@@ -75,11 +75,11 @@ jobs:
     - name: get current date
       run: echo "DATE=$(date +'%Y-%m-%dT%H:%M:%S')" >> $GITHUB_ENV
 
-    - name: get commits
-      run: |
-        # Get the list of commits
-        commits=$(git log $latest_tag..HEAD --pretty=format:'%h - %s (%an)')
-        echo "COMMITS=$commits" >> $GITHUB_ENV
+      - name: get commits
+        run: |
+          # Get the list of commits
+          commits=$(git log $latest_tag..HEAD --pretty=format:'%h - %s (%an)')
+          echo "COMMITS=$commits" >> $GITHUB_ENV
 
     - name: create gitHub issue
       uses: dacbd/create-issue-action@main
@@ -89,8 +89,8 @@ jobs:
         body: |
           ## Release ${{ github.run_number }}
 
-          - Дата: ${{ env.DATE }}
-          - Автор релиза: ${{ github.actor }}
-          - Версия: ${{ github.run_number }}
-          - Коммиты: ${{ env.COMMITS }}
-          - Ссылка на образ: cr.yandex/${{ secrets.YANDEX_REGISTRY_ID }}/app:${{ github.run_number }}
+            - Дата: ${{ env.DATE }}
+            - Автор релиза: ${{ github.actor }}
+            - Версия: ${{ github.run_number }}
+            - Коммиты: ${{ env.COMMITS }}
+            - Ссылка на образ: cr.yandex/${{ secrets.YANDEX_REGISTRY_ID }}/app:${{ github.run_number }}
