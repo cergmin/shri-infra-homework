@@ -11,22 +11,9 @@ env:
   REGISTRY_ID: crpkbormehnpcu7gaie8
 jobs:
 
-#  connect-to-vm:
-#    runs-on: ubuntu-latest
-#    steps:
-#      - name: Connect via ssh
-#        run: ssh admin@51.250.37.198
-#      - name: Login as service account
-#        run: echo ${{ secrets.YC_AUTH_TOKEN }} | docker login --username auth --password-stdin cr.yandex
-
   check-image-exists:
     runs-on: ubuntu-latest
     steps:
-      - run: |
-          mkdir -p ~/.ssh/
-          echo "${{ secrets.SSH_KEY }}" > ~/.ssh/private.key
-          echo ${{ secrets.PROD_SERVER_HOST }} > ~/.ssh/known_hosts
-
       - name: executing remote ssh commands using ssh key
         uses: appleboy/ssh-action@v1.0.3
         with:
@@ -36,7 +23,7 @@ jobs:
           script: |
             whoami
             echo "Login as service account"
-            echo ${{ secrets.YC_AUTH_TOKEN }} | docker login --username auth --password-stdin cr.yandex
+            echo ${{ secrets.YC_AUTH_TOKEN }} | docker login --username oauth --password-stdin cr.yandex
             echo "Check if image exists"
             docker manifest inspect cr.yandex/${{ env.REGISTRY_ID }}/app:${{ inputs.release_version}}_latest > /dev/null 2>&1
                       exit_code=$?        
@@ -63,8 +50,8 @@ jobs:
           script: |
             whoami
             echo "Login as service account"
-            echo ${{ secrets.YC_AUTH_TOKEN }} | docker login --username auth --password-stdin cr.yandex
+            echo ${{ secrets.YC_AUTH_TOKEN }} | docker login --username oauth --password-stdin cr.yandex
             echo "Pull latest image"
             docker pull cr.yandex/${{ env.REGISTRY_ID }}/app:${{ inputs.release_version}}_latest
             echo "Run image"
-            docker run -p ${{ env.VM_PORT }}:${{ env.VM_PORT }} cr.yandex/${{ env.REGISTRY_ID }}/app:${{ inputs.release_version}}_latest
+            docker run -p ${{ env.VM_PORT }}:${{ env.VM_PORT }} -d cr.yandex/${{ env.REGISTRY_ID }}/app:${{ inputs.release_version}}_latest
