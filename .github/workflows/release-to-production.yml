@@ -55,7 +55,7 @@ jobs:
             echo "Check if another container runs on port 3000"
             for id in $(docker ps -q)
             do
-              if [[ $(docker port "${id}") == *"${1}"* ]]; then
+              if [[ $(docker port "${id}") == *"${{ env.VM_PORT }} "* ]]; then
                 echo "stopping container ${id}"
                 docker stop "${id}"
               fi
