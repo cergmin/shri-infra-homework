@@ -64,6 +64,9 @@ jobs:
       - name: сheckout release branch
         run: git checkout releases/${{ github.event.inputs.release_version }}
 
+      - name: List all tags
+        run: git tag -l
+
       - name: get commits since last tag
         run: |
           latest_tag=$(git describe --tags $(git rev-list --tags --max-count=1))
