@@ -11,7 +11,6 @@ jobs:
         name: Install pnpm
 
         with:
-          version: 9
           run_install: false
 
       - name: Install Node.js
@@ -36,7 +35,6 @@ jobs:
         name: Install pnpm
 
         with:
-          version: 9
           run_install: false
 
       - name: Install Node.js
