@@ -73,14 +73,15 @@ jobs:
         git push origin ${{ github.run_number }}
 
     - name: create github issue
-      uses: actions-ecosystem/action-create-issue@v1
-      with:
-        title: Release ${{ github.run_number }}
-        body: |
-          **Дата:** ${{ steps.create_date.outputs.date }}
-          **Автор релиза:** ${{ github.actor }}
-          **Версия:** ${{ github.run_number }}
-          **Коммиты:**
-          ${{ env.commits }}
-          **Ссылка на Docker-образ:**
-          cr.yandex/${{ secrets.YANDEX_REGISTRY_ID }}/app:${{ github.run_number }}
+      uses: dacbd/create-issue-action@main
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          title: Release ${{ github.run_number }}
+          body: |
+            ## Release ${{ github.run_number }}
+
+            - Дата: $(date +'%Y-%m-%dT%H:%M:%S')
+            - Автор релиза: ${{ github.triggering_actor }}
+            - Версия: ${{ github.run_number }}
+            - Коммиты: ${{ env.commits }}
+            - Ссылка на образ: cr.yandex/${{ secrets.YANDEX_REGISTRY_ID }}/app:${{ github.run_number }}
