@@ -60,11 +60,11 @@ jobs:
 
       - name: Get current version
         id: get_current_version
-        run: echo "current_version=v${{ github.run_number }}" >> $GITHUB_ENV
+        run: echo "current_version=v${{ inputs.release_version }}" >> $GITHUB_ENV
 
       - name: Get previous version
         id: get_previous_version
-        run: echo "previous_version=v$(( ${{ github.run_number }} - 1 ))" >> $GITHUB_ENV
+        run: echo "previous_version=v$(( ${{ inputs.release_version }} - 1 ))" >> $GITHUB_ENV
 
       - name: Get commits between versions
         id: get_commits
@@ -79,7 +79,7 @@ jobs:
         run: echo "NOW=$(date +'%Y/%m/%d %H:%M:%S')" >> $GITHUB_ENV
 
       - name: Get issue number to add comment to
-        run: echo "issue_number=$((gh issue list -l ${{ env.current_version }} --json number --jq '.[].number'))" >> $GITHUB_ENV
+        run: echo "issue_number=$(( gh issue list -l ${{ env.current_version }} --json number --jq '.[].number' ))" >> $GITHUB_ENV
 
       - name: Add comment
         run: gh issue comment "$NUMBER" --body "$BODY"

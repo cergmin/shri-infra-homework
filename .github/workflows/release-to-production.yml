@@ -24,7 +24,7 @@ jobs:
             echo "Login as service account"
             echo ${{ secrets.YC_AUTH_TOKEN }} | docker login --username oauth --password-stdin cr.yandex
             echo "Check if image exists"
-            docker manifest inspect cr.yandex/${{ env.REGISTRY_ID }}/app:${{ inputs.release_version}}_latest > /dev/null 2>&1
+            docker manifest inspect cr.yandex/${{ env.REGISTRY_ID }}/app:${{ inputs.release_version }}_latest > /dev/null 2>&1
                       exit_code=$?        
                       if [ $exit_code -eq 0 ]; then
                         echo "image exists"
@@ -64,4 +64,4 @@ jobs:
             docker run -p ${{ env.VM_PORT }}:${{ env.VM_PORT }} -d cr.yandex/${{ env.REGISTRY_ID }}/app:${{ inputs.release_version}}_latest
 
       - name: Get issue number to add comment to
-        run: echo "issue_number=$((gh issue list -l ${{ env.current_version }} --json number --jq '.[].number'))" >> $GITHUB_ENV
+        run: echo "issue_number=$((gh issue list -l ${{ inputs.release_version }} --json number --jq '.[].number'))" >> $GITHUB_ENV
