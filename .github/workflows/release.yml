@@ -1,0 +1,46 @@
+name: Выкатить релиз в прод
+
+on:
+  workflow_dispatch:
+    inputs:
+      release_version:
+        required: true
+        description: Введите версию
+jobs:
+  startRelease:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Авторизация в докере
+        run: |
+          docker login \
+          --username oauth \
+          --password ${{ secrets.PASSWORD }} \
+          cr.yandex
+
+      - name: Деплой
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.HOST  }}
+          username: ${{ secrets.USERNAME }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            docker pull cr.yandex/crp4eluf48bv0u242o2t/app:${{ github.event.inputs.release_version }}_latest
+            docker stop new_container || true
+            docker rm new_container || true
+            docker run -d --name new_container -p 3000:3000 cr.yandex/crp4eluf48bv0u242o2t/app:${{ github.event.inputs.release_version }}_latest
+
+      - name: Проверка репозитория
+        uses: actions/checkout@v4
+
+      - name: Issue
+        run: |
+          touch $ISSUE
+          echo "## Релиз успешно проведен" >> $ISSUE
+          echo "- Дата: $(date)" >> $ISSUE
+          echo "- Автор: ${{ github.triggering_actor }}" >> $ISSUE
+          number=$(gh issue list --label "релиз ${{ github.event.inputs.release_version }}" --json number --jq '.[0].number')
+          gh issue comment "$number" --body-file "$ISSUE"
+          rm $ISSUE
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ISSUE: issue.txt
