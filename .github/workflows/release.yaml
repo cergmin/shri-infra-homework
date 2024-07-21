@@ -133,10 +133,8 @@ jobs:
 
       - name: Create and push release branch
         run: |
-          git tag ${{env.VERSION}}
+          git tag ${{env.VERSION}} -f
           git push origin ${{env.VERSION}}
-          
-          git checkout -b release-${{env.VERSION}}
           git push origin release-${{env.VERSION}}
 
   create-release-issue:
