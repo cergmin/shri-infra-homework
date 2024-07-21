@@ -60,9 +60,7 @@ jobs:
         docker tag cr.yandex/${{ secrets.YANDEX_REGISTRY_ID }}/app:${{ github.run_number }} cr.yandex/${{ secrets.YANDEX_REGISTRY_ID }}/app:${{ github.run_number }}_latest
 
     - name: log in to yandex container registry
-      uses: yc-actions/yc-cr-login@v2
-      with:
-        yc-sa-json-credentials: ${{ secrets.YC_SA_JSON_CREDENTIALS }}
+      run: echo ${{ secrets.YANDEX_REGISTRY_TOKEN }} | docker login --username oauth --password-stdin cr.yandex
 
     - name: push docker image
       run: |
@@ -73,7 +71,6 @@ jobs:
       run: |
         git tag ${{ github.run_number }}
         git push origin ${{ github.run_number }}
-
 
     - name: create github issue
       uses: actions-ecosystem/action-create-issue@v1
