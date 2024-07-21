@@ -17,8 +17,8 @@ jobs:
 
       - name: Update CHANGELOG.md
         run: |
-          git config user.email "cheperegina_as@mail.com"
-          git config user.name "PurpleGhost12"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git config --global user.name "github-actions[bot]"
           git checkout main
           git pull origin main
           > CHANGELOG.md
@@ -28,6 +28,6 @@ jobs:
           echo "${{ steps.get-commits.outputs.log_changes }}" >> CHANGELOG.md
           git add CHANGELOG.md
           git commit -m "Update CHANGELOG for release ${{ github.run_number }}"
-          git push origin main
+          git push https://${{ secrets.PA_TOKEN }}@github.com/${{ github.repository }}.git HEAD:releases/${{ github.run_number }}
         env:
           GITHUB_TOKEN: ${{ secrets.PA_TOKEN }} 
