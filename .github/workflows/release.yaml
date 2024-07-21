@@ -86,22 +86,29 @@ jobs:
           git commit -m "[BOT] Added release notes for version ${{env.VERSION}}"
           git push origin release-${{env.VERSION}}
 
-      - name: Create temporary pull request
+
+      - name: Create GitHub Pull Request
         id: create_pr
-        uses: peter-evans/create-pull-request@v6
+        uses: actions/github-script@v6
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          base: "main"
-          title: "[BOT] Release ${{ env.VERSION }}"
-          body: "This PR updates the CHANGELOG.md for release ${{ env.VERSION }}."
-          labels: BOT, CHANGELOG
+          result-encoding: string
+          script: |
+            const { data: pr } = await github.rest.pulls.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: "[BOT] Release changelogs ${{ env.VERSION }}",
+              body: "This PR updates the CHANGELOG.md for release ${{ env.VERSION }}.",
+              head: 'release-${{env.VERSION}}',
+              base: 'main',
+            });
+            return pr.number;
 
       - name: Merge pull request
         uses: actions/github-script@v6
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
-            const prNumber = "${{ steps.create_pr.outputs.pull-request-number }}";
+            const prNumber = "${{ steps.create_pr.outputs.result }}";
             await github.rest.pulls.merge({
               owner: context.repo.owner,
               repo: context.repo.repo,
