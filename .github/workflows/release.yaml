@@ -92,7 +92,6 @@ jobs:
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           base: "main"
-          branch: "release-${{env.VERSION}}"
           title: "[BOT] Release ${{ env.VERSION }}"
           body: "This PR updates the CHANGELOG.md for release ${{ env.VERSION }}."
 
