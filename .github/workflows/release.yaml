@@ -74,10 +74,9 @@ jobs:
         run: |
           git config --global user.name 'github-actions[bot]'
           git config --global user.email 'github-actions[bot]@users.noreply.github.com'
-          git config --global credential.helper '!f() { sleep 1; echo "username=git token=$GITHUB_TOKEN"; }; f'
           git add CHANGELOG.md
           git commit -m "[BOT] Update CHANGELOG.md for release $VERSION"
-          git push origin main
+          git push https://readyyyk:$GITHUB_TOKEN@github.com/${{ github.repository }}.git HEAD:main
 
   create_branch_n_tag:
     needs: [update_changelog]
