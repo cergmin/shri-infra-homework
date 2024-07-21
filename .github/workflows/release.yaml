@@ -24,6 +24,14 @@ jobs:
       - name: Run build:docker
         run: pnpm run build:docker
 
+      - name: Push docker image to registry
+        run: |
+          docker tag shri-infra cr.yandex/${{secrets.Y_REGISTRY_ID}}/shri-infra:${{env.VERSION}}
+          docker tag shri-infra cr.yandex/${{secrets.Y_REGISTRY_ID}}/shri-infra:${{env.VERSION}}_latest
+
+          docker push cr.yandex/${{secrets.Y_REGISTRY_ID}}/shri-infra:${{env.VERSION}}
+          docker push cr.yandex/${{secrets.Y_REGISTRY_ID}}/shri-infra:${{env.VERSION}}_latest
+
   set_latestTag_n_commitList:
     needs: [ test_n_lint ]
     runs-on: ubuntu-latest
