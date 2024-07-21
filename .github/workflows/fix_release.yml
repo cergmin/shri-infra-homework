@@ -18,12 +18,12 @@ jobs:
           node-version: '20.14.0'
       - run: npm ci && npm run test && npm run lint
       - name: Build docker image
-        run: docker build -t cr.yandex/${{ secrets.YCR_ID }}/app:${{ github.run_number }} -t cr.yandex/${{ secrets.YCR_ID }}/app:${{ github.run_number }}_latest .
+        run: docker build -t cr.yandex/${{ secrets.YCR_ID }}/app:${{ github.event.inputs.release_id }}_fix${{ github.run_number }} -t cr.yandex/${{ secrets.YCR_ID }}/app:${{ github.event.inputs.release_id }}_fix${{ github.run_number }}_latest .
       - name: Push image to YCR
         run: |
           docker login --username oauth --password ${{ secrets.YCR_OAUTH_TOKEN }} cr.yandex
-          docker push cr.yandex/${{ secrets.YCR_ID }}/app:${{ github.run_number }}
-          docker push cr.yandex/${{ secrets.YCR_ID }}/app:${{ github.run_number }}_latest
+          docker push cr.yandex/${{ secrets.YCR_ID }}/app:${{ github.event.inputs.release_id }}_fix${{ github.run_number }}
+          docker push cr.yandex/${{ secrets.YCR_ID }}/app:${{ github.event.inputs.release_id }}_fix${{ github.run_number }}_latest
       - name: Set git credentials
         run: |
           git config --global user.email "sheinid@ya.ru"
