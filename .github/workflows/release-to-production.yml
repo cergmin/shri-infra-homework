@@ -9,7 +9,6 @@ on:
         type: string
 env:
   REGISTRY_ID: crpkbormehnpcu7gaie8
-  VM_PUBLIC_IP: 51.250.37.198
 jobs:
 
 #  connect-to-vm:
@@ -26,22 +25,28 @@ jobs:
       - run: |
           mkdir -p ~/.ssh/
           echo "${{ secrets.SSH_KEY }}" > ~/.ssh/private.key
-          echo ${{ env.VM_PUBLIC_IP }} > ~/.ssh/known_hosts
+          echo ${{ secrets.PROD_SERVER_HOST }} > ~/.ssh/known_hosts
 
-      - name: Connect via ssh
-        run: ssh -tt -i ~/.ssh/private.key admin@${{ env.VM_PUBLIC_IP }}
-      - name: Login as service account
-        run: echo ${{ secrets.YC_AUTH_TOKEN }} | docker login --username auth --password-stdin cr.yandex
-      - name: check if image exists
-        run: |
-          docker manifest inspect cr.yandex/${{ env.REGISTRY_ID }}/app:${{ inputs.release_version}}_latest > /dev/null 2>&1
-          exit_code=$?        
-          if [ $exit_code -eq 0 ]; then
-            echo "$image exists"
-          else
-            echo "$image does not exist"
-            exit 1
-          fi
+      - name: executing remote ssh commands using ssh key
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.PROD_SERVER_HOST }}
+          username: ${{ secrets.PROD_SERVER_USER }}
+          key: ${{ secrets.SSH_KEY }}
+          script: |
+            whoami
+            echo "Login as service account"
+            echo ${{ secrets.YC_AUTH_TOKEN }} | docker login --username auth --password-stdin cr.yandex
+            echo "Check if image exists"
+            docker manifest inspect cr.yandex/${{ env.REGISTRY_ID }}/app:${{ inputs.release_version}}_latest > /dev/null 2>&1
+                      exit_code=$?        
+                      if [ $exit_code -eq 0 ]; then
+                        echo "$image exists"
+                      else
+                        echo "$image does not exist"
+                        exit 1
+                      fi
+
   launch-image-in-vm:
     runs-on: ubuntu-latest
     needs: check-image-exists
@@ -49,17 +54,17 @@ jobs:
     env:
       VM_PORT: 3000
     steps:
-      - run: |
-          mkdir ./.ssh
-          echo ${{ secrets.SSH_KEY }} > ./.ssh/private.key
-          echo ${{ env.VM_PUBLIC_IP }} > ./.ssh/known_hosts
-      - name: Connect via ssh
-        run: ssh -tt -i ${{ secrets.SSH_KEY }} admin@${{ env.VM_PUBLIC_IP }}
-      - name: Login as service account
-        run: echo ${{ secrets.YC_AUTH_TOKEN }} | docker login --username auth --password-stdin cr.yandex
-      - name: Pull latest image
-        run: docker pull cr.yandex/${{ env.REGISTRY_ID }}/app:${{ inputs.release_version}}_latest
-      - name: Run image
-        run: docker run -p ${{ env.VM_PORT }}:${{ env.VM_PORT }} cr.yandex/${{ env.REGISTRY_ID }}/app:${{ inputs.release_version}}_latest
-
-
+      - name: executing remote ssh commands using ssh key
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.PROD_SERVER_HOST }}
+          username: ${{ secrets.PROD_SERVER_USER }}
+          key: ${{ secrets.SSH_KEY }}
+          script: |
+            whoami
+            echo "Login as service account"
+            echo ${{ secrets.YC_AUTH_TOKEN }} | docker login --username auth --password-stdin cr.yandex
+            echo "Pull latest image"
+            docker pull cr.yandex/${{ env.REGISTRY_ID }}/app:${{ inputs.release_version}}_latest
+            echo "Run image"
+            docker run -p ${{ env.VM_PORT }}:${{ env.VM_PORT }} cr.yandex/${{ env.REGISTRY_ID }}/app:${{ inputs.release_version}}_latest
