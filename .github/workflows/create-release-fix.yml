@@ -71,7 +71,7 @@ jobs:
         run: |
           {
               echo 'commits<<EOF'
-              git log --pretty=oneline ${{ env.previous_version }}_latest...${{ env.current_version }}_latest
+              git log --pretty=oneline ${{ env.previous_version }}...${{ env.current_version }}
               echo EOF
           } >> "$GITHUB_ENV"
 
@@ -84,7 +84,7 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GH_REPO: ${{ github.repository }}
           NUMBER: 7
-          BODY: >
+          BODY: |
             date: ${{ env.NOW }}
             author: @${{ github.triggering_actor }}
             version: ${{ github.run_number }}
