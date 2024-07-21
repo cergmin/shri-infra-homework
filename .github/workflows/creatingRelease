@@ -1,0 +1,97 @@
+name: Creating a release
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  issues: write
+  pull-requests: write
+
+jobs:
+  lint_and_test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Node.js
+        uses: actions/setup-node@v2
+        with:
+          node-version: '20.14.0'
+      - run: npm install
+      - run: npm run lint
+      - run: npm test
+
+  build_and_push:
+    runs-on: ubuntu-latest
+    needs: lint_and_test
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Node.js
+        uses: actions/setup-node@v2
+        with:
+          node-version: '20.14.0'
+      - run: npm install
+      - run: npm run build
+      - name: Build Docker image
+        run: docker build . -t shri-infra:latest
+      - name: Log in to Yandex Container Registry
+        run: echo "${{ secrets.YANDEX_OAUTH_TOKEN }}" | docker login --username oauth --password-stdin cr.yandex
+      - name: Tag and Push Docker images to Yandex Container Registry
+        run: |
+          docker tag shri-infra:latest cr.yandex/crpkbossnpt5f3uj93p2/app:${{ github.run_number }}
+          docker tag shri-infra:latest cr.yandex/crpkbossnpt5f3uj93p2/app:${{ github.run_number }}_latest
+          docker push cr.yandex/crpkbossnpt5f3uj93p2/app:${{ github.run_number }}
+          docker push cr.yandex/crpkbossnpt5f3uj93p2/app:${{ github.run_number }}_latest
+      - name: Set up Git user
+        run: |
+          git config --global user.email "elizaosipovaa@yandex.ru"
+          git config --global user.name "Eliza"
+      - name: Create Release Branch and Tag
+        run: |
+          git checkout -b releases/${{ github.run_number }}
+          git push origin releases/${{ github.run_number }}
+          git tag -a v${{ github.run_number }} -m "Release ${{ github.run_number }}"
+          git push origin --tags
+      - name: Set Date
+        run: echo "CURRENT_DATE=$(date +'%Y-%m-%d')" >> $GITHUB_ENV
+      - name: Create Release Label
+        run: |
+          gh label create "release-${{ github.run_number }}" --color "#0E8A16" || echo "Label already exists"
+        env:
+          GH_TOKEN: ${{ github.token }}
+      - name: Create Release Issue
+        run: |
+          gh issue create \
+            --title "$TITLE" \
+            --body "$BODY" \
+            --label "$LABELS"
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TITLE: "Release ${{ github.run_number }}"
+          BODY: |
+            ### Release ${{ github.run_number }} created.
+            *Дата:* ${{ env.CURRENT_DATE }}
+            *Автор релиза:* ${{ github.actor }}
+            *Номер версии:* ${{ github.run_number }}
+            *Docker образ:* [Ссылка](http://cr.yandex/crpkbossnpt5f3uj93p2/app:${{ github.run_number }}_latest)
+          LABELS: release,release-${{ github.run_number }}
+      - name: Update Changelog
+        run: |
+          git fetch --tags
+          latest_tag=$(git describe --tags --abbrev=0)
+          echo "Latest tag: $latest_tag"
+          echo "## Release ${{ github.run_number }} - $(date)" > temp_CHANGELOG.md
+          echo >> temp_CHANGELOG.md
+          git log --pretty=format:"- %s" $latest_tag..HEAD >> temp_CHANGELOG.md
+          echo >> temp_CHANGELOG.md
+          echo "Current CHANGELOG.md content:"
+          cat CHANGELOG.md
+          cat CHANGELOG.md >> temp_CHANGELOG.md
+          mv temp_CHANGELOG.md CHANGELOG.md
+          echo "Updated CHANGELOG.md content:"
+          cat CHANGELOG.md
+          git add CHANGELOG.md
+          git commit -m "Update CHANGELOG for release ${{ github.run_number }}"
+          git push origin releases/${{ github.run_number }}
+
+
