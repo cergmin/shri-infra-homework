@@ -65,7 +65,7 @@ jobs:
         run: git checkout releases/${{ github.event.inputs.release_version }}
 
       - name: List all commits
-        run: git tag -l
+        run: git log
 
       - name: get commits since last tag
         run: |
