@@ -16,18 +16,22 @@ jobs:
         run: echo "nothing for now $VERSION"
 
   set_latestTag_n_commitList:
-    - name: Checkout repository
-      uses: actions/checkout@v4
+    needs: [ test_n_lint ]
+    runs-on: ubuntu-latest
 
-    - name: Get previous tag
-      run: |
-        previous_tag=$(git describe --tags --abbrev=0 HEAD --always)
-        echo "PREVIOUS_TAG=$previous_tag" >> $GITHUB_ENV
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-    - name: Get list of commits since previous tag
-      run: |
-        commits=$(git log $PREVIOUS_TAG..HEAD --oneline)
-        echo "COMMITS=$commits" >> $GITHUB_ENV
+      - name: Get previous tag
+        run: |
+          previous_tag=$(git describe --tags --abbrev=0 HEAD --always)
+          echo "PREVIOUS_TAG=$previous_tag" >> $GITHUB_ENV
+
+      - name: Get list of commits since previous tag
+        run: |
+          commits=$(git log $PREVIOUS_TAG..HEAD --oneline)
+          echo "COMMITS=$commits" >> $GITHUB_ENV
 
   update-changelog:
     needs: [test_n_lint, set_latestTag_n_commitList]
