@@ -27,19 +27,10 @@ jobs:
           echo "${{ steps.get-commits.outputs.log_changes }}" >> CHANGELOG.md
           git add CHANGELOG.md
           git commit -m "Update CHANGELOG for release ${{ github.run_number }}"
-          # Install ssh-agent and add private key
-          echo "$DEPLOY_KEY_PRIVATE" | base64 -d > id_rsa
-          chmod 600 id_rsa
-          eval $(ssh-agent -s)
-          ssh-add id_rsa
-          # Set up ssh config to use the deploy key
-          echo "Host github.com" >> ~/.ssh/config
-          echo "  IdentityFile ~/.ssh/id_rsa" >> ~/.ssh/config
-          echo "  IdentitiesOnly yes" >> ~/.ssh/config
-          echo "  StrictHostKeyChecking no" >> ~/.ssh/config
-          git push -f "git@github.com:${{ github.repository }}.git" main:main
-          rm id_rsa
-          ssh-agent -k
+          git config user.email "cheperegina_as@mail.com"
+          git config user.name "PurpleGhost12"
+          git add CHANGELOG.md
+          git commit -m "Update CHANGELOG for release ${{ github.run_number }}"
+          git push origin main
         env:
-          DEPLOY_KEY_PRIVATE: ${{ secrets.DEPLOY_KEY }}
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.PA_TOKEN }} 
