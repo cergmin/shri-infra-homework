@@ -26,7 +26,7 @@ jobs:
           echo "Список коммитов от предыдущего релизного (или фиксрелизного) тега:" >> CHANGELOG.md
           git add CHANGELOG.md
           git commit -m "Update CHANGELOG for release ${{ github.run_number }}"
-          git pull https://${{ secrets.PA_TOKEN }}@github.com$/{{ github.repository }}.git main
-          git push https://${{ secrets.PA_TOKEN }}@github.com$/{{ github.repository }}.git main
+          git pull https://${{ secrets.PA_TOKEN }}@github.com/${{ github.repository }}.git main
+          git push https://${{ secrets.PA_TOKEN }}@github.com/${{ github.repository }}.git main
         env:
           GITHUB_TOKEN: ${{ secrets.PA_TOKEN }} 
