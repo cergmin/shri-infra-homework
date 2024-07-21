@@ -9,21 +9,35 @@ jobs:
     uses: ./.github/workflows/test_and_lint.yaml
 
   docker:
-    needs: [test_n_lint]
+    needs: [ test_n_lint ]
     runs-on: ubuntu-latest
     steps:
       - name: Temp
         run: echo "nothing for now $VERSION"
 
-  update-changelog-and-create-issue:
-    needs: [test_n_lint]
+  set_latestTag_n_commitList:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Get previous tag
+      run: |
+        previous_tag=$(git describe --tags --abbrev=0 HEAD --always)
+        echo "PREVIOUS_TAG=$previous_tag" >> $GITHUB_ENV
+
+    - name: Get list of commits since previous tag
+      run: |
+        commits=$(git log $PREVIOUS_TAG..HEAD --oneline)
+        echo "COMMITS=$commits" >> $GITHUB_ENV
+
+  update-changelog:
+    needs: [test_n_lint, set_latestTag_n_commitList]
     runs-on: ubuntu-latest
     steps:
       - name: Temp
         run: echo "nothing for now"
 
   create_branch_n_tag:
-    needs: [test_n_lint]
+    needs: [test_n_lint, set_latestTag_n_commitList]
     runs-on: ubuntu-latest
 
     steps:
@@ -37,7 +51,6 @@ jobs:
 
       - name: Create and push release branch
         run: |
-          COMMIT_SHA=$(git rev-parse HEAD)
           git checkout main
           git pull origin main
           git tag $VERSION
@@ -46,38 +59,26 @@ jobs:
           git push origin release-$VERSION
 
   create-release-issue:
-    needs: [test_n_lint]
+    needs: [test_n_lint, set_latestTag_n_commitList]
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Get previous tag
-        id: prev-tag
-        run: |
-          previous_tag=$(git describe --tags --abbrev=0 HEAD --always)
-          echo "::set-output name=tag::$previous_tag"
-
-      - name: Get list of commits since previous tag
-        id: commits
-        run: |
-          commits=$(git log ${{ steps.prev-tag.outputs.tag }}..HEAD --oneline)
-          echo "::set-output name=commits::$commits"
-
       - name: Create issue content
         run: |
           echo "## Release Details" > issue-content.md
-          echo "- Docker Image: `for now nothing here`" >> issue-content.md
+          echo "- Docker Image: \`for now nothing here\`" >> issue-content.md
           echo "- Date: $(date)" >> issue-content.md
           echo "- Author: ${{ github.actor }}" >> issue-content.md
           echo "- Version: $VERSION" >> issue-content.md
-          echo "- Commits since last tag (${{ steps.prev-tag.outputs.tag }}):" >> issue-content.md
-          echo "${{ steps.commits.outputs.commits }}" >> issue-content.md
+          echo "- Commits since last tag ($PREVIOUS_TAG):" >> issue-content.md
+          echo "$COMMITS" >> issue-content.md
 
       - name: Create release issue
         uses: peter-evans/create-issue-from-file@v4
         with:
-          title: "Release ${{ github.run_number }}"
+          title: "Release ${{ env.VERSION }}"
           content-filepath: issue-content.md
           labels: release
