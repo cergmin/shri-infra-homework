@@ -79,7 +79,7 @@ jobs:
         run: echo "NOW=$(date +'%Y/%m/%d %H:%M:%S')" >> $GITHUB_ENV
 
       - name: Get issue number to add comment to
-        run: echo "issue_number=$((gh issue list -l v${{ env.current_version }} --json number --jq ".[].number"))" >> $GITHUB_ENV
+        run: echo "issue_number=$((gh issue list -l ${{ env.current_version }} --json number --jq '.[].number'))" >> $GITHUB_ENV
 
       - name: Add comment
         run: gh issue comment "$NUMBER" --body "$BODY"
@@ -90,6 +90,5 @@ jobs:
           BODY: |
             date: ${{ env.NOW }}
             author: @${{ github.triggering_actor }}
-            version: ${{ github.run_number }}
-            docker-image: cr.yandex/${{ env.REGISTRY_ID }}/app:${{ inputs.release_version }}_fix${{ github.run_number }}
             commits between ${{ env.previous_version }} and ${{ env.current_version }}: ${{ env.commits }}
+            docker-image: cr.yandex/${{ env.REGISTRY_ID }}/app:${{ inputs.release_version }}_fix${{ github.run_number }}

@@ -64,4 +64,4 @@ jobs:
             docker run -p ${{ env.VM_PORT }}:${{ env.VM_PORT }} -d cr.yandex/${{ env.REGISTRY_ID }}/app:${{ inputs.release_version}}_latest
 
       - name: Get issue number to add comment to
-        run: echo "issue_number=$((gh issue list -l v${{ env.current_version }} --json number --jq ".[].number"))" >> $GITHUB_ENV
+        run: echo "issue_number=$((gh issue list -l ${{ env.current_version }} --json number --jq '.[].number'))" >> $GITHUB_ENV
