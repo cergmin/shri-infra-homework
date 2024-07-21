@@ -13,7 +13,7 @@ jobs:
       - name: Авторизация в докере
         run: |
           docker login \
-          --username oauth \
+          --username phiru \
           --password ${{ secrets.PASSWORD }} \
           cr.yandex
 
