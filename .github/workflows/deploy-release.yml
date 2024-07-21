@@ -1,0 +1,56 @@
+name: Deploy Release to Production
+
+on:
+  workflow_dispatch:
+    inputs:
+      release_version:
+        description: 'version of the release'
+        required: true
+      issue_number:
+        description: 'issue number id'
+        required: true
+        type: number
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: get current date
+        run: echo "DATE=$(date +'%Y-%m-%dT%H:%M:%S')" >> $GITHUB_ENV
+
+      - name: check docker image existence
+        run: |
+          IMAGE_TAG="${{ github.event.inputs.release_version }}_latest"
+          IMAGE_NAME="cr.yandex/${{ secrets.YANDEX_REGISTRY_ID }}/app:$IMAGE_TAG"
+          if ! docker pull "$IMAGE_NAME"; then
+            echo "Docker image $IMAGE_NAME does not exist."
+            exit 1
+          fi
+        env:
+          DOCKER_PASSWORD: ${{ secrets.YANDEX_REGISTRY_TOKEN }}
+          DOCKER_USERNAME: oauth
+
+      - name: Deploy Docker image on VM
+        uses: appleboy/ssh-action@v0.1.8
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USERNAME }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            IMAGE_TAG="${{ github.event.inputs.release_version }}_latest"
+            IMAGE_NAME="cr.yandex/${{ secrets.YANDEX_REGISTRY_ID }}/app:$IMAGE_TAG"
+            docker pull "$IMAGE_NAME"
+            docker run -d --name app_container -p 80:80 "$IMAGE_NAME"
+            
+      - name: Add comment to issue
+        uses: peter-evans/create-or-update-comment@v1
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          issue-number: ${{ github.event.inputs.issue_number }}
+          body: |
+            ## Production Release Deployment
+            - **Release Version:** ${{ github.event.inputs.release_version }}
+            - **Deployment Date:** ${{ env.DATE }}
+            - **Deployed by:** ${{ github.actor }}
+            - **Image Tag:** ${{ github.event.inputs.release_version }}_latest
+            - **Image Location:** cr.yandex/${{ secrets.YANDEX_REGISTRY_ID }}/app:${{ github.event.inputs.release_version }}_latest

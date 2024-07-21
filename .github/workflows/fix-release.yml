@@ -60,14 +60,10 @@ jobs:
 
       - name: fetch all tags and branches
         run: |
-          git fetch --all
-          git fetch --tags
+          git fetch --all --tags --prune
 
       - name: get current date
         run: echo "DATE=$(date +'%Y-%m-%dT%H:%M:%S')" >> $GITHUB_ENV
-
-      - name: сheckout release branch
-        run: git checkout releases/${{ github.event.inputs.release_version }}
 
       - name: get commits since last tag
         run: |
@@ -92,6 +88,8 @@ jobs:
           commits="${commits//$'\r'/'%0D'}"
           echo "COMMITS=$commits" >> $GITHUB_ENV
 
+      - name: сheckout release branch
+        run: git checkout releases/${{ github.event.inputs.release_version }}
 
       - name: log in to yandex container registry
         run: echo ${{ secrets.YANDEX_REGISTRY_TOKEN }} | docker login --username oauth --password-stdin cr.yandex
