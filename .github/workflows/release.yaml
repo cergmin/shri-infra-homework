@@ -75,6 +75,8 @@ jobs:
           git add CHANGELOG.md
           git commit -m "[BOT] Update CHANGELOG.md for release $VERSION"
           git push origin main
+        with:
+          GITHUB_TOKEN: ${{ secrets.BOT_GH_PAT }}
 
   create_branch_n_tag:
     needs: [update_changelog]
