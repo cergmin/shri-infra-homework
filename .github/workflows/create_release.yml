@@ -60,7 +60,7 @@ jobs:
         run: |
           {
               echo 'commits<<EOF'
-              git log --pretty=oneline ${{ env.previous_version }}...${{ env.current_version }}
+              git log --pretty=oneline ${{ env.previous_version }}_latest...${{ env.current_version }}_latest
               echo EOF
           } >> "$GITHUB_ENV"
 

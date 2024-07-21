@@ -41,7 +41,6 @@ jobs:
       - name: Create docker image
         run: | 
           docker build . -t cr.yandex/${{ env.REGISTRY_ID }}/app:${{ inputs.release_version }}_fix${{ github.run_number }} -t cr.yandex/${{ env.REGISTRY_ID }}/app:${{ inputs.release_version }}_latest
-#          docker rmi cr.yandex/${{ env.REGISTRY_ID }}/app:${{ inputs.release_version }}_latest
 
       - name: Push docker image to Container registry
         run: docker push -a cr.yandex/${{ env.REGISTRY_ID }}/app
@@ -72,7 +71,7 @@ jobs:
         run: |
           {
               echo 'commits<<EOF'
-              git log --pretty=oneline ${{ env.previous_version }}...${{ env.current_version }}
+              git log --pretty=oneline ${{ env.previous_version }}_latest...${{ env.current_version }}_latest
               echo EOF
           } >> "$GITHUB_ENV"
 

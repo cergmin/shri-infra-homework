@@ -7,4 +7,51 @@ on:
         required: true
         default: '0'
         type: string
+env:
+  REGISTRY_ID: crpkbormehnpcu7gaie8
+  VM_PUBLIC_IP: 51.250.37.198
 jobs:
+
+#  connect-to-vm:
+#    runs-on: ubuntu-latest
+#    steps:
+#      - name: Connect via ssh
+#        run: ssh admin@51.250.37.198
+#      - name: Login as service account
+#        run: echo ${{ secrets.YC_AUTH_TOKEN }} | docker login --username auth --password-stdin cr.yandex
+
+  check-image-exists:
+    runs-on: ubuntu-latest
+    needs: connect-to-vm
+    steps:
+      - name: Connect via ssh
+        run: ssh admin@51.250.37.198
+      - name: Login as service account
+        run: echo ${{ secrets.YC_AUTH_TOKEN }} | docker login --username auth --password-stdin cr.yandex
+      - name: check if image exists
+        run: |
+          docker manifest inspect cr.yandex/${{ env.REGISTRY_ID }}/app:${{ inputs.release_version}}_latest > /dev/null 2>&1
+          exit_code=$?        
+          if [ $exit_code -eq 0 ]; then
+            echo "$image exists"
+          else
+            echo "$image does not exist"
+            exit 1
+          fi
+  launch-image-in-vm:
+    runs-on: ubuntu-latest
+    needs: check-image-exists
+    if: ${{ success() }}
+    env:
+      VM_PORT: 3000
+    steps:
+      - name: Connect via ssh
+        run: ssh admin@51.250.37.198
+      - name: Login as service account
+        run: echo ${{ secrets.YC_AUTH_TOKEN }} | docker login --username auth --password-stdin cr.yandex
+      - name: Pull latest image
+        run: docker pull cr.yandex/${{ env.REGISTRY_ID }}/app:${{ inputs.release_version}}_latest
+      - name: Run image
+        run: docker run -p ${{ env.VM_PORT }}:${{ env.VM_PORT }} cr.yandex/${{ env.REGISTRY_ID }}/app:${{ inputs.release_version}}_latest
+
+
