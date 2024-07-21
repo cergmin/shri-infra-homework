@@ -24,6 +24,13 @@ jobs:
       - name: Run build:docker
         run: pnpm run build:docker
 
+      - name: Login to docker (yandex)
+        run: |
+          docker login \
+            --username oauth \
+            --password ${{secrets.Y_0AUTH}} \
+            cr.yandex
+
       - name: Push docker image to registry
         run: |
           docker tag shri-infra cr.yandex/${{secrets.Y_REGISTRY_ID}}/shri-infra:${{env.VERSION}}
