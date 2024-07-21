@@ -34,6 +34,7 @@ jobs:
 
       - name: Fetch tags
         run: |
+          git fetch
           git pull
           git fetch --tags
 
@@ -123,7 +124,7 @@ jobs:
     needs: [ update_changelog ]
     steps:
       - name: Download variables artifact
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: shared_env
 
@@ -150,7 +151,7 @@ jobs:
 
     steps:
       - name: Download variables artifact
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: shared_env
 
