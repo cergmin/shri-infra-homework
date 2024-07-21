@@ -23,3 +23,11 @@ jobs:
           git add CHANGELOG.md
           git commit -m "Update CHANGELOG for release ${{ github.run_number }}"
           git push https://${{ secrets.PERSONAL_ACCESS_TOKEN }}@github.com/${{ github.repository }}.git HEAD:releases/${{ github.run_number }}
+          
+      - name: Create and merge PR
+        env:
+          GITHUB_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
+        run: |
+          gh pr create --title "Release ${{ github.run_number }}" --body "Automatic release PR for version ${{ github.run_number }}" --head releases/${{ github.run_number }} --base main
+          PR_NUMBER=$(gh pr list --head releases/${{ github.run_number }} --json number --jq '.[0].number')
+          gh pr merge $PR_NUMBER --admin --merge
