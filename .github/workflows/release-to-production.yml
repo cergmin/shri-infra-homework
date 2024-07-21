@@ -67,6 +67,8 @@ jobs:
         run: echo "NOW=$(date +'%Y/%m/%d %H:%M:%S')" >> $GITHUB_ENV
 
       - name: Get issue number to add comment to
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: echo "issue_number=$(gh issue list -l ${{ inputs.release_version }} --json number --jq '.[].number')" >> $GITHUB_ENV
 
       - name: Add comment
