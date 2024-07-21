@@ -62,7 +62,8 @@ jobs:
           IMAGE_ID: cr.yandex/${{ secrets.YCR_ID }}/app:${{ github.run_number }}
       - name: Update Changelog.md
         run: |
-          echo "## Release ${{ github.run_number }} // ${date + "%Y-%m-%d"}" > CHANGELOG.md
+          echo "## Release ${{ github.run_number }} // ${date + "%Y-%m-%d"}" > temp.md
+          echo "$(cat temp.md CHANGELOG.md)" > CHANGELOG.md
           git add CHANGELOG.md
           git commit -m "Update CHANGELOG.md"
           git push origin main
