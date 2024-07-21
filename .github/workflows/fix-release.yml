@@ -81,7 +81,6 @@ jobs:
 
       - name: push docker image
         run: |
-          echo ${{ secrets.YANDEX_PASSWORD }} | docker login --username ${{ secrets.YANDEX_USERNAME }} --password-stdin cr.yandex
           docker push cr.yandex/${{ secrets.YANDEX_REGISTRY_ID }}/app:${{ github.event.inputs.release_version }}_fix${{ github.run_number }}
           docker push cr.yandex/${{ secrets.YANDEX_REGISTRY_ID }}/app:${{ github.event.inputs.release_version }}_latest
 
