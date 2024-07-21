@@ -1,0 +1,50 @@
+name: Fix Release
+
+on: 
+  workflow_dispatch:
+    inputs:
+      release_id:
+        description: "Release"
+        required: true
+
+jobs: 
+  fix-release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Setup Node
+        uses: actions/setup-node@v4.0.3
+        with:
+          node-version: '20.14.0'
+      - run: npm ci && npm run test && npm run lint
+      - name: Build docker image
+        run: docker build -t cr.yandex/${{ secrets.YCR_ID }}/app:${{ github.run_number }} -t cr.yandex/${{ secrets.YCR_ID }}/app:${{ github.run_number }}_latest .
+      - name: Push image to YCR
+        run: |
+          docker login --username oauth --password ${{ secrets.YCR_OAUTH_TOKEN }} cr.yandex
+          docker push cr.yandex/${{ secrets.YCR_ID }}/app:${{ github.run_number }}
+          docker push cr.yandex/${{ secrets.YCR_ID }}/app:${{ github.run_number }}_latest
+      - name: Create fix tag
+        run: |
+          git tag -a v${{ github.event.inputs.release_id }}_fix${{ github.run_number }} -m "Fix release ${{ github.event.inputs.release_id }}"
+          git push origin v${{ github.event.inputs.release_id }}_fix${{ github.run_number }}
+      - name: Find issues
+        uses: actions-cool/issues-helper@v3
+        id: find_issue
+        with:
+          actions: 'find-issues'
+          token: ${{ secrets.GITHUB_TOKEN }}
+          title-includes: 'Release ${{ github.event.inputs.release_id }}'
+      - name: Add comment to issue
+        uses: peter-evans/create-or-update-comment@v4
+        with: 
+          issue-number: ${{ steps.find_issue.outputs[0].number }}
+          body: |
+            Fix author: ${{ github.actor }}
+            Fix date: $(date +'%Y-%m-%d')
+            Fix image: cr.yandex/${{ secrets.YCR_ID }}/app:${{ github.run_number }}
+            
+            
+          
+      
+    
