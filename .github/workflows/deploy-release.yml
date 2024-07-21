@@ -37,12 +37,23 @@ jobs:
           username: ${{ secrets.SSH_USERNAME }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
-            sudo groupadd docker
-            sudo usermod -aG docker ${ USER }
-            
+            # Check if docker group exists
+            if ! getent group docker; then
+              sudo groupadd docker
+            fi
+            sudo usermod -aG docker ${USER}
+
+            echo ${{ secrets.YANDEX_REGISTRY_TOKEN }} | docker login --username oauth --password-stdin cr.yandex
+
             docker pull cr.yandex/${{ secrets.YANDEX_REGISTRY_ID }}/app:${{ github.event.inputs.release_version }}_latest
-            docker kill $(docker ps -q)
-            docker rm $(docker ps -a -q)
+
+            if [ "$(docker ps -q)" ]; then
+              docker kill $(docker ps -q)
+            fi
+            if [ "$(docker ps -a -q)" ]; then
+              docker rm $(docker ps -a -q)
+            fi
+
             docker run -d --restart unless-stopped -p 3000:3000 cr.yandex/${{ secrets.YANDEX_REGISTRY_ID }}/app:${{ github.event.inputs.release_version }}_latest
             
       - name: add comment to issue
