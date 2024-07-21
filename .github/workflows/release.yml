@@ -1,0 +1,89 @@
+name: release
+
+on:
+  workflow_dispatch:
+
+jobs:
+    lint:
+    name: run lint
+    runs-on: ubuntu-latest
+    steps:
+      - name: checkout code
+        uses: actions/checkout@v3
+
+      - name: set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '20'
+
+      - name: install dependencies
+        run: npm ci
+
+      - name: run lint
+        run: npm run lint
+
+  test:
+    name: run tests
+    runs-on: ubuntu-latest
+    needs: lint
+    steps:
+      - name: checkout code
+        uses: actions/checkout@v3
+
+      - name: set up node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '20'
+
+      - name: install dependencies
+        run: npm ci
+
+      - name: run tests
+        run: npm run test
+
+  release:
+    needs: [lint, test]
+    runs-on: ubuntu-latest
+    steps:
+    - name: checkout code
+      uses: actions/checkout@v3
+
+    - name: create release branch
+      run: |
+        git config --global user.name "${{ github.actor }}"
+        git checkout -b releases/${{ github.run_number }}
+        git push origin releases/${{ github.run_number }}
+
+    - name: build docker image
+      run: |
+        docker build -t cr.yandex/${{ secrets.YANDEX_REGISTRY_ID }}/app:${{ github.run_number }} .
+        docker tag cr.yandex/${{ secrets.YANDEX_REGISTRY_ID }}/app:${{ github.run_number }} cr.yandex/${{ secrets.YANDEX_REGISTRY_ID }}/app:${{ github.run_number }}_latest
+
+    - name: log in to yandex container registry
+      uses: yc-actions/yc-cr-login@v2
+      with:
+        yc-sa-json-credentials: ${{ secrets.YC_SA_JSON_CREDENTIALS }}
+
+    - name: push docker image
+      run: |
+        docker push cr.yandex/${{ secrets.YANDEX_REGISTRY_ID }}/app:${{ github.run_number }}
+        docker push cr.yandex/${{ secrets.YANDEX_REGISTRY_ID }}/app:${{ github.run_number }}_latest
+
+    - name: create release tag
+      run: |
+        git tag ${{ github.run_number }}
+        git push origin ${{ github.run_number }}
+
+
+    - name: create github issue
+      uses: actions-ecosystem/action-create-issue@v1
+      with:
+        title: Release ${{ github.run_number }}
+        body: |
+          **Дата:** ${{ steps.create_date.outputs.date }}
+          **Автор релиза:** ${{ github.actor }}
+          **Версия:** ${{ github.run_number }}
+          **Коммиты:**
+          ${{ env.commits }}
+          **Ссылка на Docker-образ:**
+          cr.yandex/${{ secrets.YANDEX_REGISTRY_ID }}/app:${{ github.run_number }}
