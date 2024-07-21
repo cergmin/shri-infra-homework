@@ -33,7 +33,6 @@ jobs:
           username: ${{ secrets.VM_USER }}
           key: ${{ secrets.VM_SSH_KEY }}
           script: |
-            echo ssh ${{ secrets.VM_USER }}@${{ secrets.VM_IP }}
             docker pull ${{ secrets.REGISTRY_ID }}/app:${{ github.event.inputs.release_version }}_latest
             docker stop app || true
             docker rm app || true
