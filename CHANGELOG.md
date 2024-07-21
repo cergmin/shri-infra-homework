@@ -1,3 +1,7 @@
+## Release 53
+ - 51aec2e added: docker tag n push to registry (bruh, nothing really secret)
+ - baed389 [BOT] Added release notes for version 52 (#32)
+
 ## Release 52
  - b33f88b Merge remote-tracking branch 'origin/main'
  - 05a74e2 added: git-tag force
