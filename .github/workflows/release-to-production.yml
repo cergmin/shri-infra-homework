@@ -24,7 +24,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Connect via ssh
-        run: ssh -tt admin@51.250.37.198
+        run: ssh -tt -i ${{ secrets.SSH_KEY }} admin@51.250.37.198
       - name: Login as service account
         run: echo ${{ secrets.YC_AUTH_TOKEN }} | docker login --username auth --password-stdin cr.yandex
       - name: check if image exists
@@ -45,7 +45,7 @@ jobs:
       VM_PORT: 3000
     steps:
       - name: Connect via ssh
-        run: ssh -tt admin@51.250.37.198
+        run: ssh -tt -i ${{ secrets.SSH_KEY }} admin@51.250.37.198
       - name: Login as service account
         run: echo ${{ secrets.YC_AUTH_TOKEN }} | docker login --username auth --password-stdin cr.yandex
       - name: Pull latest image
