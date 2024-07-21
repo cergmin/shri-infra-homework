@@ -1,5 +1,5 @@
-name: Manual release
-run-name: ${{ github.actor }} created a manual release ${{ github.run_number }}
+name: Create release
+run-name: ${{ github.actor }} created a release ${{ github.run_number }}
 on: [workflow_dispatch]
 jobs:
   lint:
@@ -82,48 +82,48 @@ jobs:
             });
         env:
           GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
-  update-changelog:
-    runs-on: ubuntu-latest
-    needs: [ create-issue ]
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Update CHANGELOG.md
-        run: |
-          new_version="${{ github.run_number }}"
-          changelog_file="CHANGELOG.md"
-          date=$(date +'%d-%m-%Y')
-          branch_name="release/${new_version}"
-          
-          # Create new changelog entry
-          echo -e "## $new_version - $date\n\n${{ env.commits }}\n\n$(cat $changelog_file)" > $changelog_file
-          
-          # Add and commit changes
-          git config --global user.name "${{ github.actor }}"
-          git config --global user.email "${{ github.actor }}@users.noreply.github.com"
-          git checkout -b $branch_name
-          git add $changelog_file
-          git commit -m "Update CHANGELOG for version $new_version"
-          git push origin $branch_name
-
-      - name: Create Pull Request
-        uses: actions/github-script@v6
-        with:
-          script: |
-            const new_version = `${{ github.run_number }}`;
-            const branch_name = `release/${new_version}`;
-            const base = 'main';
-            const title = `Update CHANGELOG for version ${new_version}`;
-            const body = `This PR updates the CHANGELOG.md file with changes for version ${new_version}.`;
-            
-            github.rest.pulls.create({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              title: title,
-              body: body,
-              head: branch_name,
-              base: base,
-            });
-        env:
-          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
+#  update-changelog:
+#    runs-on: ubuntu-latest
+#    needs: [ create-issue ]
+#    steps:
+#      - name: Checkout repository
+#        uses: actions/checkout@v4
+#
+#      - name: Update CHANGELOG.md
+#        run: |
+#          new_version="${{ github.run_number }}"
+#          changelog_file="CHANGELOG.md"
+#          date=$(date +'%d-%m-%Y')
+#          branch_name="release/${new_version}"
+#
+#          # Create new changelog entry
+#          echo -e "## $new_version - $date\n\n${{ env.commits }}\n\n$(cat $changelog_file)" > $changelog_file
+#
+#          # Add and commit changes
+#          git config --global user.name "${{ github.actor }}"
+#          git config --global user.email "${{ github.actor }}@users.noreply.github.com"
+#          git checkout -b $branch_name
+#          git add $changelog_file
+#          git commit -m "Update CHANGELOG for version $new_version"
+#          git push origin $branch_name
+#
+#      - name: Create Pull Request
+#        uses: actions/github-script@v6
+#        with:
+#          script: |
+#            const new_version = `${{ github.run_number }}`;
+#            const branch_name = `release/${new_version}`;
+#            const base = 'main';
+#            const title = `Update CHANGELOG for version ${new_version}`;
+#            const body = `This PR updates the CHANGELOG.md file with changes for version ${new_version}.`;
+#
+#            github.rest.pulls.create({
+#              owner: context.repo.owner,
+#              repo: context.repo.repo,
+#              title: title,
+#              body: body,
+#              head: branch_name,
+#              base: base,
+#            });
+#        env:
+#          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
