@@ -74,7 +74,7 @@ jobs:
         with:
           token: ${{ github.token }}
           title: ${{ github.triggering_actor }} made release v${{ github.run_number }}
-          labels: CICD
+          labels: CICD, v${{ github.run_number }}
           body: |
             date: ${{ env.NOW }}
             author: @${{ github.triggering_actor }}
