@@ -23,7 +23,6 @@ jobs:
           host: ${{ secrets.HOST  }}
           username: ${{ secrets.USERNAME }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
-          port: ${{ secrets.PORT }}
           passphrase: ${{ secrets.PASSPHRASE }}
           script: |
             docker pull cr.yandex/crp4eluf48bv0u242o2t/app:${{ github.event.inputs.release_version }}_latest
