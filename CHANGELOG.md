@@ -1,3 +1,8 @@
+## Release 52
+ - b33f88b Merge remote-tracking branch 'origin/main'
+ - 05a74e2 added: git-tag force
+ - d4493e1 [BOT] Added release notes for version 51 (#30)
+
 ## Release 51
  - d7bc903 added: prev changelog stated
  - 7c397ee Merge remote-tracking branch 'origin/main'
