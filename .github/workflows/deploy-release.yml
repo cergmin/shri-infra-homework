@@ -38,7 +38,7 @@ jobs:
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
             sudo groupadd docker
-            sudo usermod -aG docker ${USER}
+            sudo usermod -aG docker ${ USER }
             
             docker pull cr.yandex/${{ secrets.YANDEX_REGISTRY_ID }}/app:${{ github.event.inputs.release_version }}_latest
             docker kill $(docker ps -q)

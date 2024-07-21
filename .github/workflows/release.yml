@@ -106,6 +106,12 @@ jobs:
     - name: get current date
       run: echo "DATE=$(date +'%Y-%m-%dT%H:%M:%S')" >> $GITHUB_ENV
 
+    - name: read commits from file
+      id: read_commits
+      run: |
+        commits=$(cat commits.txt)
+        echo "::set-output name=commits::$commits"
+
     - name: create gitHub issue
       uses: dacbd/create-issue-action@main
       with:
@@ -117,5 +123,5 @@ jobs:
             - Дата: ${{ env.DATE }}
             - Автор релиза: ${{ github.actor }}
             - Версия: ${{ github.run_number }}
-            - Коммиты: $(cat commits.txt)
+            - Коммиты: ${{ steps.read_commits.outputs.commits }}
             - Ссылка на образ: cr.yandex/${{ secrets.YANDEX_REGISTRY_ID }}/app:${{ github.run_number }}

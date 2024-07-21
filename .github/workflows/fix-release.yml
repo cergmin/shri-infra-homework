@@ -104,6 +104,12 @@ jobs:
           git tag ${{ github.event.inputs.release_version }}_fix${{ github.run_number }}
           git push origin ${{ github.event.inputs.release_version }}_fix${{ github.run_number }}
 
+      - name: read commits from file
+        id: read_commits
+        run: |
+          commits=$(cat commits.txt)
+          echo "::set-output name=commits::$commits"
+
       - name: add comment to issue
         uses: peter-evans/create-or-update-comment@v1
         with:
@@ -116,6 +122,6 @@ jobs:
             - Автор фикса: ${{ github.actor }}
             - Версия релиза: ${{ github.event.inputs.release_version }}
             - Коммиты:
-              $(cat commits.txt)
+              ${{ steps.read_commits.outputs.commits }}
             - Ссылка на образ:
               cr.yandex/${{ secrets.YANDEX_REGISTRY_ID }}/app:${{ github.event.inputs.release_version }}_fix${{ github.run_number }}
