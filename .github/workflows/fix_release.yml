@@ -24,6 +24,10 @@ jobs:
           docker login --username oauth --password ${{ secrets.YCR_OAUTH_TOKEN }} cr.yandex
           docker push cr.yandex/${{ secrets.YCR_ID }}/app:${{ github.run_number }}
           docker push cr.yandex/${{ secrets.YCR_ID }}/app:${{ github.run_number }}_latest
+      - name: Set git credentials
+        run: |
+          git config --global user.email "sheinid@ya.ru"
+          git config --global user.name "Dmitriy Shein"
       - name: Create fix tag
         run: |
           git tag -a v${{ github.event.inputs.release_id }}_fix${{ github.run_number }} -m "Fix release ${{ github.event.inputs.release_id }}"
