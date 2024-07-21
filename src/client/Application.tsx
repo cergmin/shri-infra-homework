@@ -32,8 +32,8 @@ export const Application: FC = () => {
             <nav className='navbar navbar-expand-sm navbar-light bg-light'>
                 <div className='container'>
                     <Link className={bem('Brand', ['navbar-brand'])} to='/'>
-                        Kogtetochka store
-                    </Link>
+                        My Kogtetochka store
+                    </Linsdk>
                     <button className={bem('Toggler', ['navbar-toggler'])} aria-label='Toggle navigation' onClick={toggle}>
                         <span className='navbar-toggler-icon'></span>
                     </button>
