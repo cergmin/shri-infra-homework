@@ -21,16 +21,15 @@ jobs:
           username: ${{ secrets.PROD_SERVER_USER }}
           key: ${{ secrets.SSH_KEY }}
           script: |
-            whoami
             echo "Login as service account"
             echo ${{ secrets.YC_AUTH_TOKEN }} | docker login --username oauth --password-stdin cr.yandex
             echo "Check if image exists"
             docker manifest inspect cr.yandex/${{ env.REGISTRY_ID }}/app:${{ inputs.release_version}}_latest > /dev/null 2>&1
                       exit_code=$?        
                       if [ $exit_code -eq 0 ]; then
-                        echo "$image exists"
+                        echo "image exists"
                       else
-                        echo "$image does not exist"
+                        echo "image does not exist"
                         exit 1
                       fi
 
@@ -48,7 +47,6 @@ jobs:
           username: ${{ secrets.PROD_SERVER_USER }}
           key: ${{ secrets.SSH_KEY }}
           script: |
-            whoami
             echo "Login as service account"
             echo ${{ secrets.YC_AUTH_TOKEN }} | docker login --username oauth --password-stdin cr.yandex
             echo "Pull latest image"
