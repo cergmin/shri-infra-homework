@@ -28,66 +28,73 @@ jobs:
     needs: [ test_n_lint ]
     runs-on: ubuntu-latest
 
-    outputs:
-      PREVIOUS_TAG: ${{ steps.get_prev_tag.outputs.previous_tag }}
-      COMMITS: ${{ steps.get_commits.outputs.commits }}
-
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Get previous tag
-        id: get_prev_tag
+      - name: Write latest tag to file
         run: |
-          previous_tag=$(git describe --tags --abbrev=0 HEAD)
-          echo "previous_tag=$previous_tag"
-          echo "previous_tag=$previous_tag" >> $GITHUB_OUTPUT
+          latest_tag="$(git describe --tags `git rev-list --tags --max-count=1`)"
+          echo "latest_tag=$latest_tag" >> shared_env.txt
 
-      - name: Get list of commits since previous tag
-        id: get_commits
+      - name: Write commits to file
         run: |
-          commits=$(git log ${{ steps.get_prev_tag.outputs.previous_tag }}..HEAD --oneline)
-          echo "commits=$commits"
-          echo "commits=$commits" >> $GITHUB_OUTPUT
+          echo "commits=$(git log $latest_tag..HEAD --oneline)" >> shared_env.txt
+
+      - name: Show intermediate (shared_env.txt)
+        run: cat shared_env.txt
+
+      - name: Upload latest_tag.txt as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: shared_env
+          path: shared_env.txt
 
   update_changelog:
-    needs: [set_latestTag_n_commitList]
     runs-on: ubuntu-latest
-
-    env:
-      PREVIOUS_TAG: ${{ needs.set_latestTag_n_commitList.outputs.PREVIOUS_TAG }}
-      COMMITS: ${{ needs.set_latestTag_n_commitList.outputs.COMMITS }}
-
+    needs: [ set_latestTag_n_commitList ]
     steps:
-      - name: Checkout
+      - name: Download variables artifact
+        uses: actions/download-artifact@v3
+        with:
+          name: shared_env
+
+      - name: Read variables
+        id: read_vars
+        run: |
+          source shared_env.txt
+          echo "latest_tag=$latest_tag" >> $GITHUB_ENV
+          echo "commits=$commits" >> $GITHUB_ENV
+
+      - name: Checkout repository
         uses: actions/checkout@v4
 
       - name: Update file locally
         run: |
-          touch temp__TEMP__new_changelog.md
-          echo "## Release $VERSION" >> __TEMP__new_changelog.md
-          echo "$COMMITS\n" >> __TEMP__new_changelog.md
-          cat ./__TEMP__new_changelog.md
-          cat CHANGELOG.md >> __TEMP__new_changelog.md
-          mv ./__TEMP__new_changelog.md ./CHANGELOG.md
+          echo "## Release $VERSION" >> TEMP_CHANGELOG.md
+          echo $commits >> TEMP_CHANGELOG.md
+          echo "" >> TEMP_CHANGELOG.md
+          mv TEMP_CHANGELOG.md CHANGELOG.md
 
-      - name: Commit and push CHANGELOG.md
+      - name: Configure git
         run: |
-          git config --global user.name 'github-actions[bot]'
-          git config --global user.email 'github-actions[bot]@users.noreply.github.com'
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Create commit
+        run: |
           git checkout -b release-$VERSION
           git add CHANGELOG.md
-          git commit -m "[BOT] Update CHANGELOG.md for release ${{ env.VERSION }}"
+          git commit -m "[BOT] Added release notes for version $VERSION"
           git push origin release-$VERSION
 
-      - name: Create pull request
+      - name: Create temporary pull request
         id: create_pr
-        uses: peter-evans/create-pull-request@v5
+        uses: peter-evans/create-pull-request@v6
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          commit-message: "[BOT] Update CHANGELOG.md for release ${{ env.VERSION }}"
-          branch: "release-$VERSION"
           base: "main"
+          branch: "release-$VERSION"
           title: "[BOT] Release ${{ env.VERSION }}"
           body: "This PR updates the CHANGELOG.md for release ${{ env.VERSION }}."
 
@@ -106,12 +113,13 @@ jobs:
             })
 
   create_branch_n_tag:
-    needs: [update_changelog]
     runs-on: ubuntu-latest
-
+    needs: [ update_changelog ]
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+      - name: Download variables artifact
+        uses: actions/download-artifact@v3
+        with:
+          name: shared_env
 
       - name: Setup GH user
         run: |
@@ -119,14 +127,14 @@ jobs:
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
 
       - name: Create and push release branch
-        env:
-          VERSION: env.VERSION
         run: |
           git fetch
           git checkout main
           git pull origin main
+          
           git tag $VERSION
           git push origin $VERSION
+          
           git checkout -b release-$VERSION
           git push origin release-$VERSION
 
@@ -135,21 +143,30 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      - name: Download variables artifact
+        uses: actions/download-artifact@v3
+        with:
+          name: shared_env
+
+      - name: Read variables
+        id: read_vars
+        run: |
+          source shared_env.txt
+          echo "latest_tag=$latest_tag" >> $GITHUB_ENV
+          echo "commits=$commits" >> $GITHUB_ENV
+
       - name: Checkout repository
         uses: actions/checkout@v4
 
       - name: Create issue content
-        env:
-          PREVIOUS_TAG: ${{ needs.set_latestTag_n_commitList.outputs.PREVIOUS_TAG }}
-          COMMITS: ${{ needs.set_latestTag_n_commitList.outputs.COMMITS }}
         run: |
           echo "## Release Details" > issue-content.md
           echo "- Docker Image: \`for now nothing here\`" >> issue-content.md
           echo "- Date: $(date)" >> issue-content.md
           echo "- Author: ${{ github.actor }}" >> issue-content.md
           echo "- Version: $VERSION" >> issue-content.md
-          echo "- Commits since last tag ($PREVIOUS_TAG):" >> issue-content.md
-          echo "$COMMITS" >> issue-content.md
+          echo "- Commits since last tag ($latest_tag):" >> issue-content.md
+          echo $commits >> issue-content.md
 
       - name: Create release issue
         uses: peter-evans/create-issue-from-file@v4
