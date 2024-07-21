@@ -17,11 +17,19 @@ jobs:
           username: admin
           key: ${{ secrets.SSH_KEY }}
           script: |
+            if ! getent group docker > /dev/null; then
+            sudo groupadd docker
+            fi
+            
             sudo usermod -aG docker admin
+            
             docker login --username oauth --password ${{ secrets.YANDEX_ACCESS_TOKEN }} cr.yandex
-            docker kill $(docker ps -q)
-            docker rm &(docker ps -a -q)
+            
+            docker kill $(docker ps -q) || true
+            docker rm $(docker ps -a -q) || true
+            
             docker image prune -f
             
             docker pull ${{ secrets.YANDEX_REGISTRY_ID }}/app:${{ github.event.inputs.release_version }}_latest
-            docker -d --restart unless-stopped -p 3000:3000 ${{ secrets.YANDEX_REGISTRY_ID }}/app:${{ github.event.inputs.release_version }}_latest
+            
+            docker run -d --restart unless-stopped -p 3000:3000 ${{ secrets.YANDEX_REGISTRY_ID }}/app:${{ github.event.inputs.release_version }}_latest
