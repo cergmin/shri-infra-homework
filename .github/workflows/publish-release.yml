@@ -1,0 +1,17 @@
+name: Publish release
+run-name: ${{ github.actor }} publish a release ${{ github.run_number }}
+on:
+  workflow_dispatch:
+    inputs:
+      release_version:
+        description: 'Release version'
+        required: true
+jobs:
+  publish-docker:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Connect to machine
+        run: |
+          ssh admin@51.250.38.245 
+          docker pull cr.yandex/${{ secrets.YANDEX_REGISTRY_ID }}/app:${{ github.event.inputs.release_version }}
+          docker run cr.yandex/${{ secrets.YANDEX_REGISTRY_ID }}/app:${{ github.event.inputs.release_version }}
