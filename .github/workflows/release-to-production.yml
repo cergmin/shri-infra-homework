@@ -23,8 +23,13 @@ jobs:
   check-image-exists:
     runs-on: ubuntu-latest
     steps:
+      - run: |
+          mkdir ./.ssh
+          echo ${{ secrets.SSH_KEY }} > ./.ssh/private.key
+          echo ${{ env.VM_PUBLIC_IP }} > ./.ssh/known_hosts
+
       - name: Connect via ssh
-        run: ssh -tt -i ${{ secrets.SSH_KEY }} admin@51.250.37.198
+        run: ssh -tt -i ./.ssh/private.key admin@51.250.37.198
       - name: Login as service account
         run: echo ${{ secrets.YC_AUTH_TOKEN }} | docker login --username auth --password-stdin cr.yandex
       - name: check if image exists
@@ -44,6 +49,10 @@ jobs:
     env:
       VM_PORT: 3000
     steps:
+      - run: |
+          mkdir ./.ssh
+          echo ${{ secrets.SSH_KEY }} > ./.ssh/private.key
+          echo ${{ env.VM_PUBLIC_IP }} > ./.ssh/known_hosts
       - name: Connect via ssh
         run: ssh -tt -i ${{ secrets.SSH_KEY }} admin@51.250.37.198
       - name: Login as service account
