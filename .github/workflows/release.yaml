@@ -72,7 +72,6 @@ jobs:
           echo "## Release ${{env.VERSION}}" >> TEMP_CHANGELOG.md
           echo " - $(echo -e $commits | sed ':a;N;$!ba;s/\n/\n - /g')" >> TEMP_CHANGELOG.md
           echo "" >> TEMP_CHANGELOG.md
-          diff TEMP_CHANGELOG.md CHANGELOG.md
           mv TEMP_CHANGELOG.md CHANGELOG.md
 
       - name: Create commit
