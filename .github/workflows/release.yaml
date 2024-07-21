@@ -44,14 +44,14 @@ jobs:
           echo "COMMITS=$commits" >> $GITHUB_ENV
 
   update_changelog:
-    needs: [test_n_lint, set_latestTag_n_commitList]
+    needs: [set_latestTag_n_commitList]
     runs-on: ubuntu-latest
     steps:
       - name: Temp
         run: echo "$PREVIOUS_TAG\n\n$COMMITS"
 
   create_branch_n_tag:
-    needs: [test_n_lint, set_latestTag_n_commitList, update_changelog]
+    needs: [set_latestTag_n_commitList, update_changelog]
     runs-on: ubuntu-latest
 
     steps:
@@ -73,7 +73,7 @@ jobs:
           git push origin release-$VERSION
 
   create-release-issue:
-    needs: [test_n_lint, set_latestTag_n_commitList, docker]
+    needs: [set_latestTag_n_commitList, docker]
     runs-on: ubuntu-latest
 
     steps:
