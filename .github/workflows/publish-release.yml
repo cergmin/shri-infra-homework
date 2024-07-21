@@ -25,4 +25,4 @@ jobs:
             docker image prune -f
             
             docker pull ${{ secrets.YANDEX_REGISTRY_ID }}/app:${{ github.event.inputs.release_version }}_latest
-            docker run -d -p 3000:3000 ${{ secrets.YANDEX_REGISTRY_ID }}/app:${{ github.event.inputs.release_version }}_latest
+            docker -d --restart unless-stopped -p 3000:3000 ${{ secrets.YANDEX_REGISTRY_ID }}/app:${{ github.event.inputs.release_version }}_latest
