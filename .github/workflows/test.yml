@@ -18,15 +18,6 @@ jobs:
           echo "# Версия ${{ github.run_number }}" | cat - CHANGELOG.md > temp && mv temp CHANGELOG.md
           echo "" >> CHANGELOG.md
           echo "Список коммитов от предыдущего релизного (или фиксрелизного) тега:" >> CHANGELOG.md
-          PREV_TAG_NUMBER=$(( ${GITHUB_RUN_NUMBER} - 1 ))
-          PREVIOUS_TAG="v${PREV_TAG_NUMBER}"
-          if [ -z "$PREVIOUS_TAG" ]; then
-            echo "Нет предыдущих тегов" >> CHANGELOG.md
-          else
-            git fetch --tags  # Обновляем теги, чтобы получить последние данные
-            COMMITS=$(git log $PREVIOUS_TAG..HEAD --oneline)
-            echo "$COMMITS" >> CHANGELOG.md
-          fi
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
           git config --global user.name "github-actions[bot]"
           git add CHANGELOG.md
