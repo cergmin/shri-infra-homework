@@ -34,14 +34,12 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Write latest tag to file
+      - name: Write latest tag n commits to file
         run: |
           latest_tag="$(git describe --tags `git rev-list --tags --max-count=1`)"
           echo $latest_tag
           echo "latest_tag=$latest_tag" >> shared_env.txt
-
-      - name: Write commits to file
-        run: |
+          
           echo "$(git log --oneline -n 3)"
           commits="$(git log --oneline $latest_tag..)"
           echo $commits
