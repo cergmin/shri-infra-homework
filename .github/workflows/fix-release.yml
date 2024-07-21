@@ -1,0 +1,27 @@
+name: Fix release
+run-name: ${{ github.actor }} fix a release ${{ github.run_number }}
+on:
+  workflow_dispatch:
+    inputs:
+      release_version:
+        description: 'Release version'
+        required: true
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          ref: ${{ github.event.inputs.release_version }}
+      - name: Install modules
+        run: npm ci
+      - name: Run ESLint
+        run: npm run lint
+  unit-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          ref: ${{ github.event.inputs.release_version }}
+      - run: npm ci
+      - run: npm test
