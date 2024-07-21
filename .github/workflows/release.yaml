@@ -42,7 +42,6 @@ jobs:
 
       - name: Write commits to file
         run: |
-          echo "$(git log --oneline -n 3)"
           commits="$(git log $latest_tag..HEAD --oneline)"
           echo $commits
           echo "commits=\"$(echo "$commits" | sed 's/"/\\"/g')\"" > shared_env.txt
@@ -131,9 +130,7 @@ jobs:
 
       - name: Create and push release branch
         run: |
-          git fetch
           git checkout main
-          git pull origin main
           
           git tag ${{env.VERSION}}
           git push origin ${{env.VERSION}}
