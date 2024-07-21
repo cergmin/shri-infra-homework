@@ -1,0 +1,49 @@
+name: Release
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    env:
+      REGISTRY_ID: ${{ secrets.CONTAINER_REGISTRY_ID }}
+      VERSION: ${{ github.run_number }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+      - name: Run lint
+        run: npm run lint
+      - name: Run tests
+        run: npm run test
+      - name: Create release branch
+        run: git checkout -b releases/${{ env.VERSION }} && git push origin releases/${{ env.VERSION }}
+      - name: Build Docker image
+        run: |
+          docker build -t cr.yandex/${{ env.REGISTRY_ID }}/app:${{ env.VERSION }} .
+          docker tag cr.yandex/${{ env.REGISTRY_ID }}/app:${{ env.VERSION }} cr.yandex/${{ env.REGISTRY_ID }}/app:${{ env.VERSION }}_latest
+      - name: Push Docker image
+        run: |
+          docker push cr.yandex/${{ env.REGISTRY_ID }}/app:${{ env.VERSION }}
+          docker push cr.yandex/${{ env.REGISTRY_ID }}/app:${{ env.VERSION }}_latest
+      - name: Create release tag
+        run: git tag -a v${{ env.VERSION }} -m "Release ${{ env.VERSION }}" && git push origin v${{ env.VERSION }}
+      - name: Create GitHub issue
+        uses: actions-ecosystem/action-create-issue@v1
+        with:
+          title: Release ${{ env.VERSION }}
+          body: |
+            **Release Date:** ${{ github.event.created_at }}
+            **Author:** ${{ github.actor }}
+            **Version:** ${{ env.VERSION }}
+            **Commits:**
+            ${{ github.event.pull_request.commits }}
+            **Docker Image:**
+            cr.yandex/${{ env.REGISTRY_ID }}/app:${{ env.VERSION }}
+
+      - name: Update CHANGELOG.md
+        run: |
+          echo "## ${{ env.VERSION }} - ${{ github.event.created_at }}" >> CHANGELOG.md
+          git add CHANGELOG.md
+          git commit -m "Update CHANGELOG for release ${{ env.VERSION }}"
+          git push origin main
