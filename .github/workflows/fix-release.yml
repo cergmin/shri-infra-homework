@@ -61,8 +61,8 @@ jobs:
       - name: get current date
         run: echo "DATE=$(date +'%Y-%m-%dT%H:%M:%S')" >> $GITHUB_ENV
 
-      - name: create fix release branch
-        run: git checkout -b fix/${{ github.event.inputs.release_version }}
+      - name: сheckout release branch
+        run: git checkout releases/${{ github.event.inputs.release_version }}
 
       - name: get commits since last tag
         run: |
