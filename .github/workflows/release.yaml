@@ -11,9 +11,19 @@ jobs:
   docker:
     needs: [ test_n_lint ]
     runs-on: ubuntu-latest
+
     steps:
-      - name: Temp
-        run: echo "nothing for now $VERSION"
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        name: Install pnpm
+        with:
+          version: 9
+          run_install: false
+
+      - name: Run build:docker
+        run: pnpm run build:docker
 
   set_latestTag_n_commitList:
     needs: [ test_n_lint ]
@@ -33,15 +43,15 @@ jobs:
           commits=$(git log $PREVIOUS_TAG..HEAD --oneline)
           echo "COMMITS=$commits" >> $GITHUB_ENV
 
-  update-changelog:
+  update_changelog:
     needs: [test_n_lint, set_latestTag_n_commitList]
     runs-on: ubuntu-latest
     steps:
       - name: Temp
-        run: echo "nothing for now"
+        run: echo "$PREVIOUS_TAG\n\n$COMMITS"
 
   create_branch_n_tag:
-    needs: [test_n_lint, set_latestTag_n_commitList]
+    needs: [test_n_lint, set_latestTag_n_commitList, update_changelog]
     runs-on: ubuntu-latest
 
     steps:
@@ -63,7 +73,7 @@ jobs:
           git push origin release-$VERSION
 
   create-release-issue:
-    needs: [test_n_lint, set_latestTag_n_commitList]
+    needs: [test_n_lint, set_latestTag_n_commitList, docker]
     runs-on: ubuntu-latest
 
     steps:
