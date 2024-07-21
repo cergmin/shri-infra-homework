@@ -39,6 +39,10 @@ jobs:
         run: |
           git checkout -b releases/${{ github.run_number }}
           git push origin releases/${{ github.run_number }}
+      - name: Set git credentials
+        run: |
+          git config --global user.email "sheinid@ya.ru"
+          git config --global user.name "Dmitriy Shein"
       - name: Create release tag
         run: |
           git tag -a v${{ github.run_number }} -m "Release #${{ github.run_number }}"
