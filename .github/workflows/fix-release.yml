@@ -121,6 +121,6 @@ jobs:
             - Автор фикса: ${{ github.actor }}
             - Версия релиза: ${{ github.event.inputs.release_version }}
             - Коммиты:
-              ${{ env.COMMITS }}
+              ${{ env.COMMITS // '%0A' / '\n' }}
             - Ссылка на образ:
               cr.yandex/${{ secrets.YANDEX_REGISTRY_ID }}/app:${{ github.event.inputs.release_version }}_fix${{ github.run_number }}
