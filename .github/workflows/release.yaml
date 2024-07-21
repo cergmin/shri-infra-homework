@@ -62,11 +62,11 @@ jobs:
 
       - name: Update file locally
         run: |
-          touch temp/new_changelog.md
-          echo "## Release $VERSION" > temp/new_changelog.md
-          echo "$COMMITS\n" >> temp/new_changelog.md
-          cat CHANGELOG.md >> new_changelog.md
-          mv new_changelog.md CHANGELOG.md
+          touch temp__TEMP__new_changelog.md
+          echo "## Release $VERSION" > __TEMP__new_changelog.md
+          echo "$COMMITS\n" >> __TEMP__new_changelog.md
+          cat CHANGELOG.md >> __TEMP__new_changelog.md
+          mv __TEMP__new_changelog.md CHANGELOG.md
 
       - name: Commit and push CHANGELOG.md
         run: |
