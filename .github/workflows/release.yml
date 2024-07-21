@@ -93,8 +93,16 @@ jobs:
       - name: Set release date
         run: echo "CURRENT_DATE=$(date +'%Y-%m-%d')" >> $GITHUB_ENV
 
-      - name: Get previous release tag
-        run: echo "::set-output name=log_changes::$(git log $PREVIOUS_TAG..HEAD --oneline)"
+      - name: Get Commit List
+        id: commit-list
+        run: |
+          latest_tag=$(git describe --tags --abbrev=0 HEAD^ || echo "")
+          if [ -z "$latest_tag" ]; then
+            echo "No tags found, using initial commit"
+            echo "::set-output name=commits::$(git log --pretty=format:'- %s' --no-merges)"
+          else
+            echo "::set-output name=commits::$(git log $latest_tag..HEAD --pretty=format:'- %s' --no-merges)"
+          fi
           
       - name: Create issue for release
         run: |
@@ -109,7 +117,8 @@ jobs:
             Дата: ${{ env.CURRENT_DATE }}
             Автор релиза: ${{ github.actor }}
             Номер версии: ${{ github.run_number }}
-            Список коммитов от предыдущего релизного (или фиксрелизного) тега: ${{ steps.get-log.outputs.log_changes }}
+            Список коммитов от предыдущего релизного (или фиксрелизного) тега: 
+            ${{ steps.get-commits.outputs.commits }}
             Docker образ: ${{ secrets.REGISTRY_ID }}/app:${{ github.run_number }}_latest
             
       - name: Update CHANGELOG.md
@@ -120,15 +129,7 @@ jobs:
           echo "# Версия ${{ github.run_number }}" | cat - CHANGELOG.md > temp && mv temp CHANGELOG.md
           echo "" >> CHANGELOG.md
           echo "Список коммитов от предыдущего релизного (или фиксрелизного) тега:" >> CHANGELOG.md
-          PREV_TAG_NUMBER=$(( ${GITHUB_RUN_NUMBER} - 1 ))
-          PREVIOUS_TAG="v${PREV_TAG_NUMBER}"
-          if [ -z "$PREVIOUS_TAG" ]; then
-            echo "Нет предыдущих тегов" >> CHANGELOG.md
-          else
-            git fetch --tags  # Обновляем теги, чтобы получить последние данные
-            COMMITS=$(git log $PREVIOUS_TAG..HEAD --oneline)
-            echo "$COMMITS" >> CHANGELOG.md
-          fi
+          echo "${{ steps.get-commits.outputs.commits }}"     
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
           git config --global user.name "github-actions[bot]"
           git add CHANGELOG.md
