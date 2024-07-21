@@ -1,0 +1,36 @@
+name: Release
+
+on:
+  workflow_dispatch:
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v2
+      - name: Setup Node.js
+        uses: actions/setup-node@v2
+        with:
+          node-version: '14'
+      - run: npm ci
+      - run: npm run lint
+      - run: npm test
+      - name: Build Docker image
+        run: docker build -t cr.yandex/<идентификатор_реестра>/app:${{ github.run_number }} .
+      - name: Push Docker image
+        run: |
+          echo ${{ secrets.YANDEX_CLOUD_TOKEN }} | docker login -u json_key --password-stdin cr.yandex
+          docker push cr.yandex/<идентификатор_реестра>/app:${{ github.run_number }}
+          docker tag cr.yandex/<идентификатор_реестра>/app:${{ github.run_number }} cr.yandex/<идентификатор_реестра>/app:${{ github.run_number }}_latest
+          docker push cr.yandex/<идентификатор_реестра>/app:${{ github.run_number }}_latest
+      - name: Create Release Issue
+        uses: actions-ecosystem/action-create-issue@v1
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          title: Release ${{ github.run_number }}
+          body: |
+            Release date: ${{ github.event.date }}
+            Author: ${{ github.actor }}
+            Version: ${{ github.run_number }}
+            Docker image: cr.yandex/<идентификатор_реестра>/app:${{ github.run_number }}
