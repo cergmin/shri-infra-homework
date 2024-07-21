@@ -39,17 +39,17 @@ jobs:
           actions: 'find-issues'
           token: ${{ secrets.GITHUB_TOKEN }}
           title-includes: 'Release ${{ github.event.inputs.release_id }}'
-      - run: echo "${{ steps.find_issue.outputs.issues }}" > issues.json
       - name: Extract issue number
-        id: extract_issue_number
+        id: extract_number
         run: |
-          ISSUE_NUMBER=$(jq '.[0].number' issues.json)
-          echo "::set-output name=issue_number::$ISSUE_NUMBER"
-      - run: echo  "${{ steps.extract_issue_number.outputs.issue_number }}"
+          issues=$(echo "${{ steps.find_issues.outputs.issues }}" | jq '.[0].number')
+          echo "Issue number: $issues"
+          echo "::set-output name=issue_number::$issues"
+      - run: echo  "${{ steps.extract_number.outputs.issue_number }}"
       - name: Add comment to issue
         uses: peter-evans/create-or-update-comment@v4
         with: 
-          issue-number: ${{ steps.extract_issue_number.outputs.issue_number }}
+          issue-number: ${{ steps.extract_number.outputs.issue_number }}
           body: |
             Fix author: ${{ github.actor }}
             Fix date: $(date +'%Y-%m-%d')
