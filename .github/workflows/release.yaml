@@ -40,13 +40,15 @@ jobs:
         id: get_prev_tag
         run: |
           previous_tag=$(git describe --tags --abbrev=0 HEAD --always)
-          echo "::set-output name=previous_tag::$previous_tag"
+          echo "previous_tag=$previous_tag"
+          echo "previous_tag=$previous_tag" >> $GITHUB_OUTPUT
 
       - name: Get list of commits since previous tag
         id: get_commits
         run: |
           commits=$(git log $PREVIOUS_TAG..HEAD --oneline)
-          echo "::set-output name=commits::$commits"
+          echo "commits=$commits"
+          echo "commits=$commits" >> $GITHUB_OUTPUT
 
   update_changelog:
     needs: [set_latestTag_n_commitList]
@@ -65,6 +67,7 @@ jobs:
           touch temp__TEMP__new_changelog.md
           echo "## Release $VERSION" > __TEMP__new_changelog.md
           echo "$COMMITS\n" >> __TEMP__new_changelog.md
+          cat ./__TEMP__new_changelog.md
           cat CHANGELOG.md >> __TEMP__new_changelog.md
           mv __TEMP__new_changelog.md CHANGELOG.md
 
@@ -74,7 +77,7 @@ jobs:
           git config --global user.email 'github-actions[bot]@users.noreply.github.com'
           git checkout -b release-$VERSION
           git add CHANGELOG.md
-          git commit -m "[BOT] Update CHANGELOG.md for release $VERSION"
+          git commit -m "[BOT] Update CHANGELOG.md for release ${{env.VERSION}}"
           git push origin release-$VERSION
 
       - name: Create pull request
@@ -82,11 +85,11 @@ jobs:
         uses: peter-evans/create-pull-request@v5
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          commit-message: "[BOT] Update CHANGELOG.md for release $VERSION"
+          commit-message: "[BOT] Update CHANGELOG.md for release ${{ env.VERSION }}"
           branch: "release-$VERSION"
           base: "main"
-          title: "[BOT] Release $VERSION"
-          body: "This PR updates the CHANGELOG.md for release $VERSION."
+          title: "[BOT] Release ${{ env.VERSION }}"
+          body: "This PR updates the CHANGELOG.md for release ${{ env.VERSION }}."
 
       - name: Merge pull request
         if: steps.create_pr.outputs.pull-request-url != ''
@@ -117,6 +120,7 @@ jobs:
 
       - name: Create and push release branch
         run: |
+          git fetch
           git checkout main
           git pull origin main
           git tag $VERSION
@@ -125,7 +129,7 @@ jobs:
           git push origin release-$VERSION
 
   create-release-issue:
-    needs: [update_changelog, docker]
+    needs: [set_latestTag_n_commitList, update_changelog, docker]
     runs-on: ubuntu-latest
 
     steps:
