@@ -78,12 +78,15 @@ jobs:
       - name: Set current date as env variable
         run: echo "NOW=$(date +'%Y/%m/%d %H:%M:%S')" >> $GITHUB_ENV
 
+      - name: Get issue number to add comment to
+        run: echo "issue_number=$((gh issue list -l v${{ env.current_version }} --json number --jq ".[].number"))" >> $GITHUB_ENV
+
       - name: Add comment
         run: gh issue comment "$NUMBER" --body "$BODY"
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GH_REPO: ${{ github.repository }}
-          NUMBER: 7
+          NUMBER: ${{ env.issue_number }}
           BODY: |
             date: ${{ env.NOW }}
             author: @${{ github.triggering_actor }}
