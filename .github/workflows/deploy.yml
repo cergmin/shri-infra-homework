@@ -33,6 +33,8 @@ jobs:
           username: ${{ secrets.VM_USER }}
           key: ${{ secrets.VM_SSH_KEY }}
           script: |
+            echo "Log in to Yandex Container Registry"
+            echo "${{ secrets.YC_TOKEN }}" | docker login --username oauth --password-stdin cr.yandex
             docker pull ${{ secrets.REGISTRY_ID }}/app:${{ github.event.inputs.release_version }}_latest
             docker stop app || true
             docker rm app || true
