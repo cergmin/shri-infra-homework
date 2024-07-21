@@ -42,7 +42,7 @@ jobs:
       - name: Add comment to issue
         uses: peter-evans/create-or-update-comment@v4
         with: 
-          issue-number: ${{ steps.find_issue.outputs[0].number }}
+          issue-number: ${{ steps.find_issue.outputs.issues[0].number }}
           body: |
             Fix author: ${{ github.actor }}
             Fix date: $(date +'%Y-%m-%d')
