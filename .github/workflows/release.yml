@@ -25,10 +25,10 @@ jobs:
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           passphrase: ${{ secrets.PASSPHRASE }}
           script: |
-            docker pull cr.yandex/b1gos0iqad9aml3je4re/app:${{ github.event.inputs.release_version }}_latest
+            docker pull cr.yandex/cr.yandex/crpf6kcjoh0imfio6dbc/app:${{ github.event.inputs.release_version }}_latest
             docker stop new_container || true
             docker rm new_container || true
-            docker run -d --name new_container -p 3000:3000 cr.yandex/b1gos0iqad9aml3je4re/app:${{ github.event.inputs.release_version }}_latest
+            docker run -d --name new_container -p 3000:3000 cr.yandex/cr.yandex/crpf6kcjoh0imfio6dbc/app:${{ github.event.inputs.release_version }}_latest
 
       - name: Проверка репозитория
         uses: actions/checkout@v4
