@@ -48,6 +48,33 @@ jobs:
     - name: checkout code
       uses: actions/checkout@v3
 
+    - name: fetch all tags and branches
+      run: |
+        git fetch --all --tags --prune
+
+    - name: get commits since last tag
+      run: |
+        git log
+        latest_tag=$(git tag -l | grep -E '^${{ github.event.inputs.release_version }}_fix[0-9]+$' | sort -t'_' -k3,3n | tail -n 1)
+        echo "Latest tag: $latest_tag"
+        if [ -z "$latest_tag" ]; then
+          echo "No tags found."
+          commits=$(git log --pretty=format:'%h - %s (%an)')
+        else
+          echo "Fetching commits since tag $latest_tag"
+          commits=$(git log $latest_tag..HEAD --pretty=format:'%h - %s (%an)')
+        fi
+        if [ -z "$commits" ]; then
+          echo "No commits found."
+        else
+          echo "Commits: $commits"
+        fi
+        # для многострочного текста
+        commits="${commits//'%'/'%25'}"
+        commits="${commits//$'\n'/'%0A'}"
+        commits="${commits//$'\r'/'%0D'}"
+        echo "COMMITS=$commits" >> $GITHUB_ENV
+
     - name: create release branch
       run: |
         git config --global user.name "${{ github.actor }}"
@@ -84,12 +111,6 @@ jobs:
     - name: get current date
       run: echo "DATE=$(date +'%Y-%m-%dT%H:%M:%S')" >> $GITHUB_ENV
 
-    - name: get commits
-      run: |
-        # Get the list of commits
-        commits=$(git log $latest_tag..HEAD --pretty=format:'%h - %s (%an)')
-        echo "COMMITS=$commits" >> $GITHUB_ENV
-
     - name: create gitHub issue
       uses: dacbd/create-issue-action@main
       with:
@@ -101,5 +122,5 @@ jobs:
             - Дата: ${{ env.DATE }}
             - Автор релиза: ${{ github.actor }}
             - Версия: ${{ github.run_number }}
-            - Коммиты: ${{ env.COMMITS }}
+            - Коммиты: ${{ env.COMMITS // '%0A' / '\n' }}
             - Ссылка на образ: cr.yandex/${{ secrets.YANDEX_REGISTRY_ID }}/app:${{ github.run_number }}
