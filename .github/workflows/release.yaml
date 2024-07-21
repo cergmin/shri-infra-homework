@@ -57,11 +57,27 @@ jobs:
       COMMITS: ${{ needs.set_latestTag_n_commitList.outputs.COMMITS }}
 
     steps:
-      - name: Temp
-        run: echo "$PREVIOUS_TAG\n\n$COMMITS"
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Update file locally
+        run: |
+          touch temp/new_changelog.md
+          echo "## Release $VERSION" > temp/new_changelog.md
+          echo "$COMMITS\n" >> temp/new_changelog.md
+          cat CHANGELOG.md >> new_changelog.md
+          mv new_changelog.md CHANGELOG.md
+
+      - name: Commit and push CHANGELOG.md
+        run: |
+          git config --global user.name 'github-actions[bot]'
+          git config --global user.email 'github-actions[bot]@users.noreply.github.com'
+          git add CHANGELOG.md
+          git commit -m "[BOT] Update CHANGELOG.md for release $VERSION"
+          git push origin main
 
   create_branch_n_tag:
-    needs: [set_latestTag_n_commitList, update_changelog]
+    needs: [update_changelog]
     runs-on: ubuntu-latest
 
     steps:
@@ -83,7 +99,7 @@ jobs:
           git push origin release-$VERSION
 
   create-release-issue:
-    needs: [set_latestTag_n_commitList, docker]
+    needs: [update_changelog, docker]
     runs-on: ubuntu-latest
 
     steps:
