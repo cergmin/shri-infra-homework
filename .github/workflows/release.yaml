@@ -40,7 +40,9 @@ jobs:
           COMMIT_SHA=$(git rev-parse HEAD)
           git checkout main
           git pull origin main
+          git tag $VERSION
           git tag $VERSION $COMMIT_SHA
+          git push origin $VERSION
           git checkout -b release-$VERSION
           git push origin release-$VERSION
 
