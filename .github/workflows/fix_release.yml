@@ -39,6 +39,7 @@ jobs:
           actions: 'find-issues'
           token: ${{ secrets.GITHUB_TOKEN }}
           title-includes: 'Release ${{ github.event.inputs.release_id }}'
+      - run: echo  "${{ steps.find_issue.outputs }}"
       - name: Add comment to issue
         uses: peter-evans/create-or-update-comment@v4
         with: 
