@@ -68,6 +68,10 @@ jobs:
         run: |
           latest_tag=$(git describe --tags $(git rev-list --tags --max-count=1))
           commits=$(git log $latest_tag..HEAD --pretty=format:'%h - %s (%an)')
+          # для многострочного текста
+          commits="${commits//'%'/'%25'}"
+          commits="${commits//$'\n'/'%0A'}"
+          commits="${commits//$'\r'/'%0D'}"
           echo "COMMITS=$commits" >> $GITHUB_ENV
 
       - name: build docker image
