@@ -51,7 +51,7 @@ jobs:
           username: ${{ secrets.DEPLOY_USER }}
           key: ${{ secrets.DEPLOY_KEY }}
           script: |
-            docker login --username oauth --password ${{ secrets.YCR_OAUTH_TOKEN }} cr.yandex
+            echo ${{ secrets.YC_OAUTH_TOKEN }} | docker login --username oauth --password-stdin cr.yandex
             docker pull cr.yandex/${{ secrets.YCR_ID }}/app:${{ github.event.inputs.release_id }}
             docker stop shri-infra
             docker system prune -f
