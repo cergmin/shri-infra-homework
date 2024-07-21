@@ -54,7 +54,6 @@ jobs:
 
     - name: get commits since last tag
       run: |
-        git log
         latest_tag=$(git tag -l | grep -E '^${{ github.event.inputs.release_version }}_fix[0-9]+$' | sort -t'_' -k3,3n | tail -n 1)
         echo "Latest tag: $latest_tag"
         if [ -z "$latest_tag" ]; then
@@ -68,12 +67,8 @@ jobs:
           echo "No commits found."
         else
           echo "Commits: $commits"
+          echo "$commits" > commits.txt
         fi
-        # для многострочного текста
-        commits="${commits//'%'/'%25'}"
-        commits="${commits//$'\n'/'%0A'}"
-        commits="${commits//$'\r'/'%0D'}"
-        echo "COMMITS=$commits" >> $GITHUB_ENV
 
     - name: create release branch
       run: |
@@ -111,10 +106,6 @@ jobs:
     - name: get current date
       run: echo "DATE=$(date +'%Y-%m-%dT%H:%M:%S')" >> $GITHUB_ENV
 
-    - name: prepare commit message
-      run: |
-        echo "COMMITS=$(echo "${{ env.COMMITS }}" | tr '%0A' '\n')" >> $GITHUB_ENV
-
     - name: create gitHub issue
       uses: dacbd/create-issue-action@main
       with:
@@ -126,5 +117,5 @@ jobs:
             - Дата: ${{ env.DATE }}
             - Автор релиза: ${{ github.actor }}
             - Версия: ${{ github.run_number }}
-            - Коммиты: ${{ env.COMMITS }}
+            - Коммиты: $(cat commits.txt)
             - Ссылка на образ: cr.yandex/${{ secrets.YANDEX_REGISTRY_ID }}/app:${{ github.run_number }}

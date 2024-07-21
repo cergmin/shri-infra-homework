@@ -37,10 +37,13 @@ jobs:
           username: ${{ secrets.SSH_USERNAME }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
-            IMAGE_TAG="${{ github.event.inputs.release_version }}_latest"
-            IMAGE_NAME="cr.yandex/${{ secrets.YANDEX_REGISTRY_ID }}/app:$IMAGE_TAG"
-            docker pull "$IMAGE_NAME"
-            docker run -d --name app_container -p 80:80 "$IMAGE_NAME"
+            sudo groupadd docker
+            sudo usermod -aG docker ${USER}
+            
+            docker pull cr.yandex/${{ secrets.YANDEX_REGISTRY_ID }}/app:${{ github.event.inputs.release_version }}_latest
+            docker kill $(docker ps -q)
+            docker rm $(docker ps -a -q)
+            docker run -d --restart unless-stopped -p 3000:3000 cr.yandex/${{ secrets.YANDEX_REGISTRY_ID }}/app:${{ github.event.inputs.release_version }}_latest
             
       - name: add comment to issue
         uses: peter-evans/create-or-update-comment@v1

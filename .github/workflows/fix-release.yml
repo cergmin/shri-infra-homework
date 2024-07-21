@@ -80,12 +80,8 @@ jobs:
             echo "No commits found."
           else
             echo "Commits: $commits"
+            echo "$commits" > commits.txt
           fi
-          # для многострочного текста
-          commits="${commits//'%'/'%25'}"
-          commits="${commits//$'\n'/'%0A'}"
-          commits="${commits//$'\r'/'%0D'}"
-          echo "COMMITS=$commits" >> $GITHUB_ENV
 
       - name: сheckout release branch
         run: git checkout releases/${{ github.event.inputs.release_version }}
@@ -108,10 +104,6 @@ jobs:
           git tag ${{ github.event.inputs.release_version }}_fix${{ github.run_number }}
           git push origin ${{ github.event.inputs.release_version }}_fix${{ github.run_number }}
 
-      - name: prepare commit message
-        run: |
-          echo "COMMITS=$(echo "${{ env.COMMITS }}" | tr '%0A' '\n')" >> $GITHUB_ENV
-
       - name: add comment to issue
         uses: peter-evans/create-or-update-comment@v1
         with:
@@ -124,6 +116,6 @@ jobs:
             - Автор фикса: ${{ github.actor }}
             - Версия релиза: ${{ github.event.inputs.release_version }}
             - Коммиты:
-              ${{ env.COMMITS }}
+              $(cat commits.txt)
             - Ссылка на образ:
               cr.yandex/${{ secrets.YANDEX_REGISTRY_ID }}/app:${{ github.event.inputs.release_version }}_fix${{ github.run_number }}
