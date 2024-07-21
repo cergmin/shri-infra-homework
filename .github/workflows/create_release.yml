@@ -57,7 +57,8 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           RELEASE_ID: ${{ github.run_number }}
-          COMMIT_LIST: ${{ steps.commit_list.outputs }}
+          # COMMIT_LIST: ${{ steps.commit_list.outputs }}
           AUTHOR: ${{ github.actor }}
           IMAGE_ID: cr.yandex/${{ secrets.YCR_ID }}/app:${{ github.run_number }}
+        
       
