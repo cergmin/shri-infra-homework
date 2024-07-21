@@ -1,4 +1,4 @@
-## Release 49
- - a8f92bd changed: manual create-pr
- - 2c255cf changed: remove smth
+## Release 50
+ - 70ed7b9 Merge remote-tracking branch 'origin/main'
+ - 50250c8 added: git fetch
 
