@@ -24,12 +24,10 @@ jobs:
       - name: Run build:docker
         run: pnpm run build:docker
 
-      - name: Login to docker (yandex)
-        run: |
-          docker login \
-            --username oauth \
-            --password ${{secrets.Y_0AUTH}} \
-            cr.yandex
+      - name: Login to Yandex Cloud Container Registry
+        uses: yc-actions/yc-cr-login@v2
+        with:
+          yc-sa-json-credentials: ${{ secrets.YC_SA_JSON_CREDENTIALS }}
 
       - name: Push docker image to registry
         run: |
