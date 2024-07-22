@@ -185,4 +185,4 @@ jobs:
         with:
           title: "Release ${{ env.VERSION }}"
           content-filepath: issue-content.md
-          labels: release
+          labels: release,r-${{ env.VERSION }}
