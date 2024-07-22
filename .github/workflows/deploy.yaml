@@ -16,9 +16,6 @@ jobs:
         run: |
           curl https://storage.yandexcloud.net/yandexcloud-yc/install.sh | bash -s -- -ni TEMP_DIR
           
-          echo "touch MADE_FROM_CI_${{ github.event.inputs.release-tag }}" >> SSH_SCRIPT 
-          
-          
-          cat SCRIPT
+          echo "touch MADE_FROM_CI_${{ github.event.inputs.release-tag }}" >> SSH_SCRIPT
           
           ./TEMP_DIR/bin/yc compute ssh --id=${{secrets.Y_VM_ID}} --token=${{secrets.Y_0AUTH}} < SSH_SCRIPT
