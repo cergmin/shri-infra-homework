@@ -1,3 +1,8 @@
+## Release 55
+ - d91499d Merge remote-tracking branch 'origin/main'
+ - ae484fe [no-check] added: off. auth action
+ - 64a1f04 [BOT] Added release notes for version 54 (#35)
+
 ## Release 54
  - d4679a2 Merge remote-tracking branch 'origin/main'
  - 2bc1e7e [no-check] added: auth
