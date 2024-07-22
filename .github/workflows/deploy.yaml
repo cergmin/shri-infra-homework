@@ -19,7 +19,7 @@ jobs:
 
       - name: Check if image exists
         run: |
-          docker pull сr.yandex/${{secrets.Y_REGISTRY_ID}}/shri-infra:${{ github.event.inputs.release-tag }}_latest -q
+          docker pull cr.yandex/${{secrets.Y_REGISTRY_ID}}/shri-infra:${{ github.event.inputs.release-tag }}_latest -q
 
       - name: SSH n work
         run: |
