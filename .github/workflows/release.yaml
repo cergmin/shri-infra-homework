@@ -173,7 +173,7 @@ jobs:
       - name: Create issue content
         run: |
           echo "## Release Details" > issue-content.md
-          echo "- Docker Image: \`for now nothing here\`" >> issue-content.md
+          echo "- Docker Image: [shri-infra:${{env.VERSION}}](cr.yandex/${{secrets.Y_REGISTRY_ID}}/shri-infra:${{env.VERSION}})" >> issue-content.md
           echo "- Date: $(date)" >> issue-content.md
           echo "- Author: ${{ github.actor }}" >> issue-content.md
           echo "- Version: ${{env.VERSION}}" >> issue-content.md
