@@ -26,7 +26,7 @@ jobs:
           curl https://storage.yandexcloud.net/yandexcloud-yc/install.sh | bash -s -- -ni TEMP_DIR
           
           echo "echo ' - CALLED_CI ${{ github.event.inputs.release-tag }}'" >> SSH_SCRIPT
-          echo "docker pull сr.yandex/${{secrets.Y_REGISTRY_ID}}/shri-infra:${{ github.event.inputs.release-tag }}_latest" >> SSH_SCRIPT          
+          echo "docker pull cr.yandex/${{secrets.Y_REGISTRY_ID}}/shri-infra:${{ github.event.inputs.release-tag }}_latest" >> SSH_SCRIPT          
           echo "docker stop shrinfra && docker rm shrinfra" >> SSH_SCRIPT
           echo "docker run -d -p 3000:3000 --name shrinfra сr.yandex/${{secrets.Y_REGISTRY_ID}}/shri-infra:${{ github.event.inputs.release-tag }}_latest" >> SSH_SCRIPT
           
