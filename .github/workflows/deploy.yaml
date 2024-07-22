@@ -33,6 +33,8 @@ jobs:
           ./TEMP_DIR/bin/yc compute ssh --id=${{secrets.Y_VM_ID}} --token=${{secrets.Y_0AUTH}} < SSH_SCRIPT
 
       - name: Add comment to issue
+        env:
+          GH_TOKEN: ${{secrets.GTIHUB_TOKEN}}
         run: |
           num="$(gh search issues --repo readyyyk/shri-2024-infra --label release --label r-${{ github.event.inputs.release-tag }} --json number --jq .[0].number)"
           
