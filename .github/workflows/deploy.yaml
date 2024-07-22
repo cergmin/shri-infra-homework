@@ -1,0 +1,24 @@
+name: Deploy to VM
+
+on:
+  workflow_dispatch:
+    inputs:
+      release-tag:
+        description: Tag of release to deploy
+        required: true
+
+jobs:
+  deploy-by-ssh:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Install YC cli
+        run: |
+          curl -sSL https://storage.yandexcloud.net/yandexcloud-yc/install.sh | bash
+          source ~/.bashrc
+
+      - name: SSH n work
+        run: |
+          yc compute ssh --id ${{secrets.Y_VM_ID}} --token=${{secrets.Y_0AUTH}}
+          touch MADE_FROM_CI_${{ github.event.inputs.release-tag }}
+          exit
