@@ -14,8 +14,7 @@ jobs:
     steps:
       - name: SSH n work
         run: |
-          curl -sSL https://storage.yandexcloud.net/yandexcloud-yc/install.sh | bash
-          source ~/.bashrc
-          yc compute ssh --id ${{secrets.Y_VM_ID}} --token=${{secrets.Y_0AUTH}}
+          curl https://storage.yandexcloud.net/yandexcloud-yc/install.sh | bash -s -- -ni TEMP_DIR
+          ./TEMP_DIR/bin/yc compute ssh --id=${{secrets.Y_VM_ID}} --token=${{secrets.Y_0AUTH}}
           touch MADE_FROM_CI_${{ github.event.inputs.release-tag }}
           exit
