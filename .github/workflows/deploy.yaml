@@ -12,10 +12,22 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      - name: Login to Yandex Cloud Container Registry
+        uses: yc-actions/yc-cr-login@v2
+        with:
+          yc-sa-json-credentials: ${{ secrets.YC_SA_JSON_CREDENTIALS }}
+
+      - name: Check if image exists
+        run: |
+          docker pull -q сr.yandex/${{secrets.Y_REGISTRY_ID}}/shri-infra:${{ github.event.inputs.release-tag }}_latest
+
       - name: SSH n work
         run: |
           curl https://storage.yandexcloud.net/yandexcloud-yc/install.sh | bash -s -- -ni TEMP_DIR
           
-          echo "touch MADE_FROM_CI_${{ github.event.inputs.release-tag }}" >> SSH_SCRIPT
+          echo "echo ' - CALLED_CI ${{ github.event.inputs.release-tag }}'" >> SSH_SCRIPT
+          echo "docker pull сr.yandex/${{secrets.Y_REGISTRY_ID}}/shri-infra:${{ github.event.inputs.release-tag }}_latest" >> SSH_SCRIPT          
+          echo "docker stop shrinfra && docker rm shrinfra" >> SSH_SCRIPT
+          echo "docker run -d -p 3000:3000 --name shrinfra сr.yandex/${{secrets.Y_REGISTRY_ID}}/shri-infra:${{ github.event.inputs.release-tag }}_latest" >> SSH_SCRIPT
           
           ./TEMP_DIR/bin/yc compute ssh --id=${{secrets.Y_VM_ID}} --token=${{secrets.Y_0AUTH}} < SSH_SCRIPT
