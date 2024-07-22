@@ -1,3 +1,9 @@
+## Release 57
+ - a163083 added: issue editing with gh cli when deploy added: additional label when release
+ - ab3ffad Merge remote-tracking branch 'origin/main'
+ - 16f23f9 [BOT] Added release notes for version 56 (#38)
+ - d95e3d3 changed: added simple log statement
+
 ## Release 56
  - 3d68285 changed: Removed Cyrr. "С" 3
  - 74fab0e changed: Removed Cyrr. "С" 2
