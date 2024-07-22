@@ -1,3 +1,8 @@
+## Release 58
+ - d56034c Merge remote-tracking branch 'origin/main'
+ - 2744835 added: gh token env
+ - d514f88 [BOT] Added release notes for version 57 (#40)
+
 ## Release 57
  - a163083 added: issue editing with gh cli when deploy added: additional label when release
  - ab3ffad Merge remote-tracking branch 'origin/main'
