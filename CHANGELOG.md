@@ -1,3 +1,8 @@
+## Release 54
+ - d4679a2 Merge remote-tracking branch 'origin/main'
+ - 2bc1e7e [no-check] added: auth
+ - 0192786 [BOT] Added release notes for version 53 (#34)
+
 ## Release 53
  - 51aec2e added: docker tag n push to registry (bruh, nothing really secret)
  - baed389 [BOT] Added release notes for version 52 (#32)
