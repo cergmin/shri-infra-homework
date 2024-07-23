@@ -1,0 +1,9 @@
+output.html
+node_modules/
+.DS_Store
+dist/
+.github/
+.gitignore
+CHANGELOG.md
+README.md
+key.json

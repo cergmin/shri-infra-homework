@@ -1,0 +1,44 @@
+name: Deploy to VM
+
+on:
+  workflow_dispatch:
+    inputs:
+      release-tag:
+        description: Tag of release to deploy
+        required: true
+
+jobs:
+  deploy-by-ssh:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Login to Yandex Cloud Container Registry
+        uses: yc-actions/yc-cr-login@v2
+        with:
+          yc-sa-json-credentials: ${{ secrets.YC_SA_JSON_CREDENTIALS }}
+
+      - name: Check if image exists
+        run: |
+          docker pull cr.yandex/${{secrets.Y_REGISTRY_ID}}/shri-infra:${{ github.event.inputs.release-tag }}_latest -q
+
+      - name: SSH n work
+        run: |
+          curl https://storage.yandexcloud.net/yandexcloud-yc/install.sh | bash -s -- -ni TEMP_DIR
+          
+          echo "echo ' - CALLED_CI ${{ github.event.inputs.release-tag }}' >> CI_deploy.yalm_CALLS" >> SSH_SCRIPT
+          echo "docker pull cr.yandex/${{secrets.Y_REGISTRY_ID}}/shri-infra:${{ github.event.inputs.release-tag }}_latest" >> SSH_SCRIPT          
+          echo "docker stop shrinfra && docker rm shrinfra" >> SSH_SCRIPT
+          echo "docker run -d -p 3000:3000 --name shrinfra cr.yandex/${{secrets.Y_REGISTRY_ID}}/shri-infra:${{ github.event.inputs.release-tag }}_latest" >> SSH_SCRIPT
+          
+          ./TEMP_DIR/bin/yc compute ssh --id=${{secrets.Y_VM_ID}} --token=${{secrets.Y_0AUTH}} < SSH_SCRIPT
+
+      - name: Add comment to issue
+        env:
+          GH_TOKEN: ${{secrets.GTIHUB_TOKEN}}
+        run: |
+          num="$(gh search issues --repo readyyyk/shri-2024-infra --label release --label r-${{ github.event.inputs.release-tag }} --json number --jq .[0].number)"
+          
+          echo "### Release Update" >> issue-body.md
+          echo "The release has been deployed to production on \`$(date '+%d.%m.%Y %T')\` by \`${{github.actor}}\`." >> issue-body.md 
+          
+          gh issue comment $num --repo readyyyk/shri-2024-infra --body-file ./issue-body.md

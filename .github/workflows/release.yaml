@@ -1,0 +1,188 @@
+name: release.yaml
+on: [workflow_dispatch]
+
+env:
+  VERSION: ${{ github.run_number }}
+
+jobs:
+  test_n_lint:
+    uses: ./.github/workflows/test_and_lint.yaml
+
+  docker:
+    needs: [ test_n_lint ]
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        name: Install pnpm
+        with:
+          run_install: false
+
+      - name: Run build:docker
+        run: pnpm run build:docker
+
+      - name: Login to Yandex Cloud Container Registry
+        uses: yc-actions/yc-cr-login@v2
+        with:
+          yc-sa-json-credentials: ${{ secrets.YC_SA_JSON_CREDENTIALS }}
+
+      - name: Push docker image to registry
+        run: |
+          docker tag shri-infra cr.yandex/${{secrets.Y_REGISTRY_ID}}/shri-infra:${{env.VERSION}}
+          docker tag shri-infra cr.yandex/${{secrets.Y_REGISTRY_ID}}/shri-infra:${{env.VERSION}}_latest
+
+          docker push cr.yandex/${{secrets.Y_REGISTRY_ID}}/shri-infra:${{env.VERSION}}
+          docker push cr.yandex/${{secrets.Y_REGISTRY_ID}}/shri-infra:${{env.VERSION}}_latest
+
+  set_latestTag_n_commitList:
+    needs: [ test_n_lint ]
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Write latest tag n commits to file
+        run: |
+          latest_tag="$(git describe --tags `git rev-list --tags --max-count=1`)"
+          echo "latest_tag=$latest_tag" >> shared_env.txt
+          commits="$(git log --oneline $latest_tag.. | sed ':a;N;$!ba;s/\n/\\n/g;s/"/\\"/g;s/\$/\\\$/g')"
+          echo "commits=\"$commits\"" >> shared_env.txt
+      - name: Upload latest_tag.txt as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: shared_env
+          path: shared_env.txt
+
+  update_changelog:
+    runs-on: ubuntu-latest
+    needs: [ set_latestTag_n_commitList ]
+    steps:
+      - name: Download variables artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: shared_env
+
+      - name: Read variables
+        id: read_vars
+        run: |
+          source shared_env.txt
+          echo "latest_tag=$latest_tag" >> $GITHUB_ENV
+          echo "commits=$commits" >> $GITHUB_ENV
+
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Prepare git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git checkout -b release-${{env.VERSION}}
+
+      - name: Update file locally
+        run: |
+          echo "## Release ${{env.VERSION}}" >> TEMP_CHANGELOG.md
+          echo " - $(echo -e $commits | sed ':a;N;$!ba;s/\n/\n - /g')" >> TEMP_CHANGELOG.md
+          echo "" >> TEMP_CHANGELOG.md
+          cat CHANGELOG.md >> TEMP_CHANGELOG.md
+          mv TEMP_CHANGELOG.md CHANGELOG.md
+
+      - name: Create commit
+        run: |
+          git add CHANGELOG.md
+          git commit -m "[BOT] Added release notes for version ${{env.VERSION}}"
+          git push origin release-${{env.VERSION}}
+
+
+      - name: Create GitHub Pull Request
+        id: create_pr
+        uses: actions/github-script@v6
+        with:
+          result-encoding: string
+          script: |
+            const { data: pr } = await github.rest.pulls.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: "[BOT] Release changelogs ${{ env.VERSION }}",
+              body: "This PR updates the CHANGELOG.md for release ${{ env.VERSION }}.",
+              head: 'release-${{env.VERSION}}',
+              base: 'main',
+            });
+            return pr.number;
+
+      - name: Merge pull request
+        uses: actions/github-script@v6
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const prNumber = "${{ steps.create_pr.outputs.result }}";
+            await github.rest.pulls.merge({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: prNumber,
+              merge_method: 'squash'
+            })
+
+  create_branch_n_tag:
+    runs-on: ubuntu-latest
+    needs: [ update_changelog ]
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          ref: "release-${{env.VERSION}}"
+
+      - name: Setup GH user
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Create and push release branch
+        run: |
+          git tag ${{env.VERSION}} -f
+          git push origin ${{env.VERSION}}
+          git push origin release-${{env.VERSION}}
+
+  create-release-issue:
+    needs: [set_latestTag_n_commitList, update_changelog, docker]
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Download variables artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: shared_env
+
+      - name: Read variables
+        id: read_vars
+        run: |
+          source shared_env.txt
+          echo "latest_tag=$latest_tag" >> $GITHUB_ENV
+          echo "commits=$commits" >> $GITHUB_ENV
+
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Create issue content
+        run: |
+          echo "## Release Details" > issue-content.md
+          echo "- Docker Image: [shri-infra:${{env.VERSION}}](cr.yandex/${{secrets.Y_REGISTRY_ID}}/shri-infra:${{env.VERSION}})" >> issue-content.md
+          echo "- Date: $(date)" >> issue-content.md
+          echo "- Author: ${{ github.actor }}" >> issue-content.md
+          echo "- Version: ${{env.VERSION}}" >> issue-content.md
+          echo "- Commits since last tag ($latest_tag):" >> issue-content.md
+          echo "- - $(echo -e $commits | sed ':a;N;$!ba;s/\n/\n- - /g')" >> issue-content.md
+
+      - name: Create release issue
+        uses: peter-evans/create-issue-from-file@v4
+        with:
+          title: "Release ${{ env.VERSION }}"
+          content-filepath: issue-content.md
+          labels: release,r-${{ env.VERSION }}

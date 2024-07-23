@@ -1,0 +1,6 @@
+on:
+  pull_request
+
+jobs:
+  test_n_lint:
+    uses: ./.github/workflows/test_and_lint.yaml
