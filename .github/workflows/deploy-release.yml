@@ -1,0 +1,69 @@
+name: deploy release to production
+
+on:
+  workflow_dispatch:
+    inputs:
+      release_version:
+        description: 'version of the release'
+        required: true
+      issue_number:
+        description: 'issue number id'
+        required: true
+        type: number
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: get current date
+        run: echo "DATE=$(date +'%Y-%m-%dT%H:%M:%S')" >> $GITHUB_ENV
+
+      - name: log in to yandex container registry
+        run: echo ${{ secrets.YANDEX_REGISTRY_TOKEN }} | docker login --username oauth --password-stdin cr.yandex
+
+      - name: check docker image existence
+        run: |
+          IMAGE_TAG="${{ github.event.inputs.release_version }}_latest"
+          IMAGE_NAME="cr.yandex/${{ secrets.YANDEX_REGISTRY_ID }}/app:$IMAGE_TAG"
+          if ! docker pull "$IMAGE_NAME"; then
+            echo "Docker image $IMAGE_NAME does not exist."
+            exit 1
+          fi
+
+      - name: deploy docker image on VM
+        uses: appleboy/ssh-action@v0.1.8
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USERNAME }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            # Check if docker group exists
+            if ! getent group docker; then
+              sudo groupadd docker
+            fi
+            sudo usermod -aG docker ${USER}
+
+            echo ${{ secrets.YANDEX_REGISTRY_TOKEN }} | docker login --username oauth --password-stdin cr.yandex
+
+            docker pull cr.yandex/${{ secrets.YANDEX_REGISTRY_ID }}/app:${{ github.event.inputs.release_version }}_latest
+
+            if [ "$(docker ps -q)" ]; then
+              docker kill $(docker ps -q)
+            fi
+            if [ "$(docker ps -a -q)" ]; then
+              docker rm $(docker ps -a -q)
+            fi
+
+            docker run -d --restart unless-stopped -p 3000:3000 cr.yandex/${{ secrets.YANDEX_REGISTRY_ID }}/app:${{ github.event.inputs.release_version }}_latest
+            
+      - name: add comment to issue
+        uses: peter-evans/create-or-update-comment@v1
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          issue-number: ${{ github.event.inputs.issue_number }}
+          body: |
+            ## Production Release
+            - **Версия релиза:** ${{ github.event.inputs.release_version }}
+            - **Дата:** ${{ env.DATE }}
+            - **Автор:** ${{ github.actor }}
+            - **Ссылка на образ:** cr.yandex/${{ secrets.YANDEX_REGISTRY_ID }}/app:${{ github.event.inputs.release_version }}_latest

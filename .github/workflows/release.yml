@@ -1,0 +1,127 @@
+name: release
+
+on:
+  workflow_dispatch:
+
+jobs:
+  lint:
+    name: run lint
+    runs-on: ubuntu-latest
+    steps:
+      - name: checkout code
+        uses: actions/checkout@v3
+
+      - name: set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '20'
+
+      - name: install dependencies
+        run: npm ci
+
+      - name: run lint
+        run: npm run lint
+
+  test:
+    name: run tests
+    runs-on: ubuntu-latest
+    needs: lint
+    steps:
+      - name: checkout code
+        uses: actions/checkout@v3
+
+      - name: set up node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '20'
+
+      - name: install dependencies
+        run: npm ci
+
+      - name: run tests
+        run: npm run test
+
+  release:
+    needs: [lint, test]
+    runs-on: ubuntu-latest
+    steps:
+    - name: checkout code
+      uses: actions/checkout@v3
+
+    - name: fetch all tags and branches
+      run: |
+        git fetch --all --tags --prune
+
+    - name: get commits since last tag
+      run: |
+        latest_tag=$(git tag -l | grep -E '^${{ github.event.inputs.release_version }}_fix[0-9]+$' | sort -t'_' -k3,3n | tail -n 1)
+        echo "Latest tag: $latest_tag"
+        if [ -z "$latest_tag" ]; then
+          echo "No tags found."
+          commits=$(git log --pretty=format:'%h - %s (%an)')
+        else
+          echo "Fetching commits since tag $latest_tag"
+          commits=$(git log $latest_tag..HEAD --pretty=format:'%h - %s (%an)')
+        fi
+        if [ -z "$commits" ]; then
+          echo "No commits found."
+        else
+          echo "Commits: $commits"
+          echo "$commits" > commits.txt
+        fi
+
+    - name: create release branch
+      run: |
+        git config --global user.name "${{ github.actor }}"
+        git checkout -b releases/${{ github.run_number }}
+        git push origin releases/${{ github.run_number }}
+
+    - name: build docker image
+      run: |
+        docker build -t cr.yandex/${{ secrets.YANDEX_REGISTRY_ID }}/app:${{ github.run_number }} .
+        docker tag cr.yandex/${{ secrets.YANDEX_REGISTRY_ID }}/app:${{ github.run_number }} cr.yandex/${{ secrets.YANDEX_REGISTRY_ID }}/app:${{ github.run_number }}_latest
+
+    - name: log in to yandex container registry
+      run: echo ${{ secrets.YANDEX_REGISTRY_TOKEN }} | docker login --username oauth --password-stdin cr.yandex
+
+    - name: push docker image
+      run: |
+        docker push cr.yandex/${{ secrets.YANDEX_REGISTRY_ID }}/app:${{ github.run_number }}
+        docker push cr.yandex/${{ secrets.YANDEX_REGISTRY_ID }}/app:${{ github.run_number }}_latest
+
+    - name: create release tag
+      run: |
+        git tag ${{ github.run_number }}
+        git push origin ${{ github.run_number }}
+
+    - name: update CHANGELOG.md
+      run: |
+        echo "## ${{ github.run_number }} ($(date))" > CHANGELOG.md
+        git log $(git describe --tags --abbrev=0)..HEAD --pretty=format:"- %s" >> CHANGELOG.md
+        git add CHANGELOG.md
+        git commit -m "update CHANGELOG for release ${{ github.run_number }}"
+        git push origin releases/${{
+        github.run_number }}
+
+    - name: get current date
+      run: echo "DATE=$(date +'%Y-%m-%dT%H:%M:%S')" >> $GITHUB_ENV
+
+    - name: read commits from file
+      id: read_commits
+      run: |
+        commits=$(cat commits.txt)
+        echo "::set-output name=commits::$commits"
+
+    - name: create gitHub issue
+      uses: dacbd/create-issue-action@main
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
+        title: Release ${{ github.run_number }}
+        body: |
+          ## Release ${{ github.run_number }}
+
+            - Дата: ${{ env.DATE }}
+            - Автор релиза: ${{ github.actor }}
+            - Версия: ${{ github.run_number }}
+            - Коммиты: ${{ steps.read_commits.outputs.commits }}
+            - Ссылка на образ: cr.yandex/${{ secrets.YANDEX_REGISTRY_ID }}/app:${{ github.run_number }}
