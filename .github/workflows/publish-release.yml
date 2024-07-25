@@ -1,0 +1,28 @@
+name: Publish release
+run-name: ${{ github.actor }} publish a release ${{ github.run_number }}
+on:
+  workflow_dispatch:
+    inputs:
+      release_version:
+        description: 'Release version'
+        required: true
+jobs:
+  publish-docker:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy on machine
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: 51.250.38.245
+          username: admin
+          key: ${{ secrets.SSH_KEY }}
+          script: |
+            sudo groupadd docker
+            sudo usermod -aG docker admin
+            docker login --username oauth --password ${{ secrets.YANDEX_ACCESS_TOKEN }} cr.yandex
+            docker kill $(docker ps -q)
+            docker rm &(docker ps -a -q)
+            docker image prune -f
+            
+            docker pull ${{ secrets.YANDEX_REGISTRY_ID }}/app:${{ github.event.inputs.release_version }}_latest
+            docker run -d --restart unless-stopped -p 3000:3000 ${{ secrets.YANDEX_REGISTRY_ID }}/app:${{ github.event.inputs.release_version }}_latest

@@ -1,0 +1,53 @@
+name: Fix release
+run-name: ${{ github.actor }} fix a release ${{ github.run_number }}
+on:
+  workflow_dispatch:
+    inputs:
+      release_version:
+        description: 'Release version'
+        required: true
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          ref: release/${{ github.event.inputs.release_version }}
+      - name: Install modules
+        run: npm ci
+      - name: Run ESLint
+        run: npm run lint
+  unit-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          ref: release/${{ github.event.inputs.release_version }}
+      - run: npm ci
+      - run: npm test
+  create-and-push-docker-image:
+    runs-on: ubuntu-latest
+    needs: [ lint, unit-tests ]
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          ref: release/${{ github.event.inputs.release_version }}
+      - name: Docker auth
+        run: docker login --username oauth --password ${{ secrets.YANDEX_ACCESS_TOKEN }} cr.yandex
+      - name: Docker create images
+        run: |
+          docker build -t ${{ secrets.YANDEX_REGISTRY_ID }}/app:${{ github.run_number }} .
+          docker build -t ${{ secrets.YANDEX_REGISTRY_ID }}/app:${{ github.run_number }}_latest .
+      - name: Docker push images
+        run: |
+          docker push ${{ secrets.YANDEX_REGISTRY_ID }}/app:${{ github.run_number }}
+          docker push ${{ secrets.YANDEX_REGISTRY_ID }}/app:${{ github.run_number }}_latest
+  create-tag:
+    runs-on: ubuntu-latest
+    needs: [ create-and-push-docker-image ]
+    steps:
+      - uses: actions/checkout@v3
+      - name: Create tag
+        run: |
+          git tag v${{ github.event.inputs.release_version }}_fix${{ github.run_number }} main
+          git push origin v${{ github.event.inputs.release_version }}_fix${{ github.run_number }}

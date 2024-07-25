@@ -1,0 +1,130 @@
+name: Create release
+run-name: ${{ github.actor }} created a release ${{ github.run_number }}
+on: [workflow_dispatch]
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Install modules
+        run: npm ci
+      - name: Run ESLint
+        run: npm run lint
+  unit-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - run: npm ci
+      - run: npm test
+  create-release-branch:
+    runs-on: ubuntu-latest
+    needs: [ lint, unit-tests ]
+    steps:
+      - uses: actions/checkout@v3
+      - name: Set up Git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+      - name: Create and push release branch
+        run: |
+          git checkout -b releases/${{ github.run_number }}
+          git push origin releases/${{ github.run_number }}
+  create-and-push-docker-image:
+    runs-on: ubuntu-latest
+    needs: [ create-release-branch ]
+    steps:
+      - uses: actions/checkout@v3
+      - name: Docker auth
+        run: docker login --username oauth --password ${{ secrets.YANDEX_ACCESS_TOKEN }} cr.yandex
+      - name: Docker create images
+        run: |
+          docker build -t ${{ secrets.YANDEX_REGISTRY_ID }}/app:${{ github.run_number }} .
+          docker build -t ${{ secrets.YANDEX_REGISTRY_ID }}/app:${{ github.run_number }}_latest .
+      - name: Docker push images
+        run: |
+          docker push ${{ secrets.YANDEX_REGISTRY_ID }}/app:${{ github.run_number }}
+          docker push ${{ secrets.YANDEX_REGISTRY_ID }}/app:${{ github.run_number }}_latest
+  create-tag:
+    runs-on: ubuntu-latest
+    needs: [ create-and-push-docker-image ]
+    steps:
+      - uses: actions/checkout@v3
+      - name: Create tag
+        run: |
+          git tag v${{ github.run_number }} main
+          git push origin v${{ github.run_number }}
+  create-issue:
+    runs-on: ubuntu-latest
+    needs: [ create-tag ]
+    steps:
+      - uses: actions/checkout@v3
+      - name: Get commit history
+        id: commits
+        run: |
+          PREV_TAG=$(git tag --sort=-creatordate | grep -v "v${{ github.run_number }}" | head -n 1)
+          echo "previous_tag=$PREV_TAG" >> $GITHUB_ENV
+          COMMITS=$(git log $PREV_TAG..HEAD --pretty=format:'* %s' --abbrev-commit)
+          echo "commits=$COMMITS" >> $GITHUB_ENV
+      - name: Create issue
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const version = `v${{ github.run_number }}`;
+            const date = new Date().toISOString().split('T')[0];
+            const author = context.actor;
+            const dockerImage = `${{ secrets.YANDEX_REGISTRY_ID }}/app:${{ github.run_number }}`;
+            const commits = process.env.commits;
+            await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: `Release ${version}`,
+              body: `**Release Date:** ${date}\n**Author:** ${author}\n**Version:** ${version}\n**Commits:**\n${commits}\n**Docker Image:**\n[${dockerImage}](https://cr.yandex/registry/${{ secrets.YANDEX_REGISTRY_ID }}/${{ github.run_number }})`,
+            });
+        env:
+          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
+# Проблемы с CHANGELOG.md, не получается автоматически замержить pull-request
+#  update-changelog:
+#    runs-on: ubuntu-latest
+#    needs: [ create-issue ]
+#    steps:
+#      - name: Checkout repository
+#        uses: actions/checkout@v4
+#
+#      - name: Update CHANGELOG.md
+#        run: |
+#          new_version="${{ github.run_number }}"
+#          changelog_file="CHANGELOG.md"
+#          date=$(date +'%d-%m-%Y')
+#          branch_name="release/${new_version}"
+#
+#          # Create new changelog entry
+#          echo -e "## $new_version - $date\n\n${{ env.commits }}\n\n$(cat $changelog_file)" > $changelog_file
+#
+#          # Add and commit changes
+#          git config --global user.name "${{ github.actor }}"
+#          git config --global user.email "${{ github.actor }}@users.noreply.github.com"
+#          git checkout -b $branch_name
+#          git add $changelog_file
+#          git commit -m "Update CHANGELOG for version $new_version"
+#          git push origin $branch_name
+#
+#      - name: Create Pull Request
+#        uses: actions/github-script@v6
+#        with:
+#          script: |
+#            const new_version = `${{ github.run_number }}`;
+#            const branch_name = `release/${new_version}`;
+#            const base = 'main';
+#            const title = `Update CHANGELOG for version ${new_version}`;
+#            const body = `This PR updates the CHANGELOG.md file with changes for version ${new_version}.`;
+#
+#            github.rest.pulls.create({
+#              owner: context.repo.owner,
+#              repo: context.repo.repo,
+#              title: title,
+#              body: body,
+#              head: branch_name,
+#              base: base,
+#            });
+#        env:
+#          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
