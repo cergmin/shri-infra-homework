@@ -1,3 +1,4 @@
+// Test PR changes - adding a comment to demonstrate PR workflow
 import React from "react";
 import { Helmet } from "react-helmet";
 import { cn } from "@bem-react/classname";

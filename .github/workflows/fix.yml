@@ -1,0 +1,67 @@
+name: Release Fix
+
+on:
+  workflow_dispatch:
+    inputs:
+      release_version:
+        description: "Base release version (e.g. 123)"
+        required: true
+      fix_description:
+        description: "Description of the fix"
+        required: true
+
+jobs:
+  fix-release:
+    runs-on: ubuntu-latest
+    environment: production
+    env:
+      DOCKER_REGISTRY: cr.yandex/${{ secrets.YC_REGISTRY_ID }}
+      BASE_VERSION: ${{ github.event.inputs.release_version }}
+      FIX_VERSION: fix${{ github.run_number }}
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - run: npm ci
+      - run: npm run lint
+      - run: npm test
+      - run: npm run build
+
+      - name: Configure YC CLI
+        run: |
+          echo "${{ secrets.YC_KEY_JSON }}" > key.json
+          yc config set service-account-key key.json
+
+      - name: Build and push Docker image
+        run: |
+          echo "${{ secrets.YC_KEY_JSON }}" | docker login cr.yandex --username json_key --password-stdin
+          docker build -t $DOCKER_REGISTRY/app:$BASE_VERSION_$FIX_VERSION .
+          docker tag $DOCKER_REGISTRY/app:$BASE_VERSION_$FIX_VERSION $DOCKER_REGISTRY/app:$BASE_VERSION_latest
+          docker push $DOCKER_REGISTRY/app:$BASE_VERSION_$FIX_VERSION
+          docker push $DOCKER_REGISTRY/app:$BASE_VERSION_latest
+          rm key.json
+
+      - name: Create Git tag
+        run: |
+          git config --global user.name "GitHub Actions"
+          git config --global user.email "actions@github.com"
+          git tag -a v$BASE_VERSION_$FIX_VERSION -m "Fix for v$BASE_VERSION: ${{ github.event.inputs.fix_description }}"
+          git push origin v$BASE_VERSION_$FIX_VERSION
+
+      - name: Comment on release
+        uses: peter-evans/create-or-update-comment@v4
+        with:
+          issue-number: ${{ env.BASE_VERSION }}
+          body: |
+            ### Hotfix applied 
+            **Version:** ${{ env.BASE_VERSION }}_${{ env.FIX_VERSION }}
+            **Description:** ${{ github.event.inputs.fix_description }}
+            **Author:** @${{ github.actor }}
+            **Docker Image:** `$DOCKER_REGISTRY/app:$BASE_VERSION_$FIX_VERSION`
+            **Deploy Command:**
+            ```bash
+            gh workflow run deploy.yml -f version=$BASE_VERSION
+            ```

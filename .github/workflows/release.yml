@@ -1,0 +1,65 @@
+name: Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      release_notes:
+        description: "Release notes"
+        required: true
+        default: "Production release"
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    environment: production
+    env:
+      DOCKER_REGISTRY: cr.yandex/${{ secrets.YC_REGISTRY_ID }}
+      RELEASE_VERSION: ${{ github.run_number }}
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - run: npm ci
+      - run: npm run lint
+      - run: npm test
+      - run: npm run build
+
+      - name: Configure YC CLI
+        run: |
+          echo "${{ secrets.YC_KEY_JSON }}" > key.json
+          yc config set service-account-key key.json
+          yc config set cloud-id ${{ secrets.YC_CLOUD_ID }}
+          yc config set folder-id ${{ secrets.YC_FOLDER_ID }}
+
+      - name: Build and push Docker image
+        run: |
+          echo "${{ secrets.YC_KEY_JSON }}" | docker login cr.yandex --username json_key --password-stdin
+          docker build -t $DOCKER_REGISTRY/app:$RELEASE_VERSION .
+          docker tag $DOCKER_REGISTRY/app:$RELEASE_VERSION $DOCKER_REGISTRY/app:latest
+          docker push $DOCKER_REGISTRY/app:$RELEASE_VERSION
+          docker push $DOCKER_REGISTRY/app:latest
+          rm key.json
+
+      - name: Create Git tag
+        run: |
+          git config --global user.name "GitHub Actions"
+          git config --global user.email "actions@github.com"
+          git tag -a v$RELEASE_VERSION -m "Release $RELEASE_VERSION"
+          git push origin v$RELEASE_VERSION
+
+      - name: Generate changelog
+        run: |
+          git log $(git describe --tags --abbrev=0)..HEAD --pretty=format:"- %s" > CHANGELOG.md
+          echo -e "# Release v$RELEASE_VERSION\n\n$(cat CHANGELOG.md)" > CHANGELOG.md
+
+      - name: Create GitHub release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: v${{ env.RELEASE_VERSION }}
+          name: Release v${{ env.RELEASE_VERSION }}
+          body: ${{ github.event.inputs.release_notes }}
+          draft: false
+          prerelease: false
